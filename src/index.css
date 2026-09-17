@@ -1,0 +1,19 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --azul: #00183D; --celeste: #B9CEED; --dorado: #CAA181;
+  --blanco: #FFFFFF; --gris: #f5f7fa; --oscuro: #001128;
+  --sans: 'Inter', system-ui, sans-serif;
+  --display: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --r: 12px; --r-lg: 20px;
+  --sh: 0 2px 12px rgba(0,24,61,.08);
+  --sh-lg: 0 8px 32px rgba(0,24,61,.14);
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--sans); background: var(--blanco); color: #111; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+h1,h2,h3,h4 { font-family: var(--display); font-weight: 700; line-height: 1.15; letter-spacing: -.02em; }
+p { line-height: 1.7; color: #555; }
+a { text-decoration: none; color: inherit; }
+button { font-family: var(--sans); cursor: pointer; border: none; }
+img { display: block; max-width: 100%; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: var(--celeste); border-radius: 3px; }
