@@ -80,7 +80,17 @@ export default function Dashboard() {
   }
 
   async function agendar() {
-    if (!agForm.fecha) { alert(t.date + ' requerida'); return }
+  if (!agForm.fecha) { alert('Por favor selecciona una fecha.'); return }
+  
+  const rid = 'am-' + Math.random().toString(36).slice(2,10)
+  sessionStorage.setItem('pendingConsulta', JSON.stringify({
+    esp: agForm.esp, fecha: agForm.fecha, hora: agForm.hora,
+    desc: agForm.desc || agForm.esp, userId: user.id,
+    rid: rid, ts: Date.now()
+  }))
+  
+  window.location.href = 'https://buy.stripe.com/7sY14n5d9dKG6ST1dR8EM01'
+}
     setAgLoading(true)
     const rid = 'am-' + Math.random().toString(36).slice(2,10)
     await supabase.from('consultas').insert({ fecha: agForm.fecha, hora: agForm.hora, especialidad: agForm.esp, monto: 49.99, pagado: false, jitsi_room: rid })
