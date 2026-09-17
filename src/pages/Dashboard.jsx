@@ -91,15 +91,6 @@ export default function Dashboard() {
   
   window.location.href = 'https://buy.stripe.com/7sY14n5d9dKG6ST1dR8EM01'
 }
-    setAgLoading(true)
-    const rid = 'am-' + Math.random().toString(36).slice(2,10)
-    await supabase.from('consultas').insert({ fecha: agForm.fecha, hora: agForm.hora, especialidad: agForm.esp, monto: 49.99, pagado: false, jitsi_room: rid })
-    await supabase.from('casos').insert({ cliente_id: user.id, especialidad: agForm.esp, descripcion: agForm.desc||agForm.esp, estado: 'abierto' })
-    setAgSuccess({ rid, fecha: agForm.fecha, hora: agForm.hora, esp: agForm.esp })
-    setAgLoading(false)
-    loadAll()
-  }
-
   async function saveProfile() {
     setSavingProfile(true)
     const { error } = await supabase.from('usuarios').update(profileForm).eq('id', user.id)
