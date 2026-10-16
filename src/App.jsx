@@ -4,6 +4,7 @@ import { LangProvider } from './context/LangContext'
 import Landing from './pages/Landing'
 import Dashboard from './pages/Dashboard'
 import DashboardAbogado from './pages/DashboardAbogado'
+import { Privacidad, Terminos } from './pages/Legal'
 
 function PrivateRoute({ children, requiredTipo }) {
   const { user, loading } = useAuth()
@@ -23,6 +24,8 @@ function AppRoutes() {
       <Route path="/abogado" element={
         <PrivateRoute requiredTipo="abogado"><DashboardAbogado /></PrivateRoute>
       } />
+      <Route path="/privacidad" element={<Privacidad />} />
+      <Route path="/terminos" element={<Terminos />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

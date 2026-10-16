@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
 import { supabase } from '../lib/supabase'
+import { LogoMark } from '../components/Logo'
+
+// Enlace de la videollamada: Google Meet si existe; si no, la sala anterior de Jitsi
+const salaUrl = c => c.meet_link || (c.jitsi_room ? 'https://meet.jit.si/' + c.jitsi_room : null)
 
 const S = {
   nav: { background:'var(--azul)', height:62, display:'flex', alignItems:'center', padding:'0 28px', gap:16, position:'sticky', top:0, zIndex:100, boxShadow:'0 2px 16px rgba(0,0,0,.25)' },
@@ -48,15 +52,11 @@ export default function DashboardAbogado() {
     setLoading(true)
     const [casosRes, consultasRes, profileRes] = await Promise.all([
       supabase.from('casos').select('*, usuarios(nombre,apellido,email)').eq('abogado_id', user.id).order('created_at', { ascending: false }),
-      supabase.from('consultas').select('*').order('fecha', { ascending: false }),
+      supabase.from('consultas').select('*').eq('abogado_id', user.id).order('fecha', { ascending: false }),
       supabase.from('abogados').select('*').eq('id', user.id).single()
     ])
-    // If no cases assigned to this lawyer, show all open cases
-    let casosData = casosRes.data || []
-    if (casosData.length === 0) {
-      const allOpen = await supabase.from('casos').select('*').eq('estado', 'abierto').order('created_at', { ascending: false })
-      casosData = allOpen.data || []
-    }
+    // Solo los casos asignados a este abogado (nunca los de otros)
+    const casosData = casosRes.data || []
     setCasos(casosData)
     setConsultas(consultasRes.data || [])
     setProfile(profileRes.data || {})
@@ -75,11 +75,6 @@ export default function DashboardAbogado() {
     loadAll()
   }
 
-  async function marcarPagado(id) {
-    await supabase.from('consultas').update({ pagado: true }).eq('id', id)
-    loadAll()
-  }
-
   async function handleSignOut() { await signOut(); navigate('/') }
 
   const casosAbiertos = casos.filter(c => c.estado === 'abierto')
@@ -93,23 +88,23 @@ export default function DashboardAbogado() {
       {/* NAV */}
       <nav style={S.nav}>
         <a href="/" style={{ display:'flex', alignItems:'center', gap:10, textDecoration:'none' }}>
-          <svg viewBox="0 0 230 160" width="30" height="21"><polygon points="0,155 31,155 73,0 42,0" fill="#000"/><polygon points="68,0 99,0 123,155 92,155" fill="#000"/><polygon points="105,155 136,155 169,0 138,0" fill="#000"/><polygon points="165,0 196,0 230,155 199,155" fill="#000"/><rect x="53" y="83" width="96" height="16" rx="3" fill="#B9CEED"/></svg>
+          <LogoMark size={30} />
           <div style={{ width:1, height:22, background:'rgba(185,206,237,.25)' }}/>
           <div style={{ display:'flex', flexDirection:'column', lineHeight:1.1 }}>
-            <span style={{ fontFamily:'var(--display)', fontSize:'.92rem', fontWeight:700, color:'#fff', letterSpacing:'.06em' }}>ABOGAMÉXICO</span>
+            <span style={{ fontFamily:'var(--display)', fontSize:'.98rem', fontWeight:800, color:'#fff' }}>Aboga<span style={{ color:'var(--acento)' }}>México</span></span>
             <span style={{ fontSize:'.55rem', color:'var(--celeste)', letterSpacing:'.08em' }}>{lang==='es'?'Panel Abogado':'Lawyer Panel'}</span>
           </div>
         </a>
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:10 }}>
           <button onClick={toggleLang} style={{ background:'rgba(185,206,237,.1)', color:'#fff', border:'1px solid rgba(185,206,237,.25)', padding:'7px 13px', borderRadius:7, fontSize:'.8rem', fontWeight:600, cursor:'pointer' }}>🌐 {lang==='es'?'EN':'ES'}</button>
-          <span style={{ color:'rgba(255,255,255,.7)', fontSize:'.82rem' }}>Lic. {nombre}</span>
+          <span className="dash-nav-name" style={{ color:'rgba(255,255,255,.7)', fontSize:'.82rem' }}>Lic. {nombre}</span>
           <button onClick={handleSignOut} style={{ background:'transparent', color:'#fff', border:'1.5px solid rgba(185,206,237,.35)', padding:'7px 16px', borderRadius:7, fontSize:'.82rem', fontWeight:600, cursor:'pointer' }}>{t.navSignOut}</button>
         </div>
       </nav>
 
-      <div style={S.layout}>
+      <div className="dash-layout" style={S.layout}>
         {/* SIDEBAR */}
-        <aside style={S.sidebar}>
+        <aside className="dash-sidebar" style={S.sidebar}>
           {[
             ['home','🏠', lang==='es'?'Inicio':'Home'],
             ['activos','📂', t.assignedCases + (casosAbiertos.length?' ('+casosAbiertos.length+')':'')],
@@ -145,15 +140,15 @@ export default function DashboardAbogado() {
                       {profile?.especialidad} · {profile?.estado||'México'}{profile?.verificado ? ' · ✓ Verificado' : ' · ⏳ Pendiente verificación'}
                     </div>
                   </div>
-                  <button onClick={() => setPage('activos')} style={{ background:'linear-gradient(135deg,#CAA181,#b88c6a)', color:'#fff', border:'none', padding:'10px 22px', borderRadius:9, fontSize:'.9rem', fontWeight:600, cursor:'pointer' }}>
+                  <button onClick={() => setPage('activos')} style={{ background:'var(--grad-acento)', color:'var(--sobre-acento)', border:'none', padding:'10px 22px', borderRadius:9, fontSize:'.9rem', fontWeight:600, cursor:'pointer' }}>
                     {lang==='es'?'Ver casos asignados':'View assigned cases'}
                   </button>
                 </div>
-                <div style={S.statsRow}>
+                <div className="dash-stats" style={S.statsRow}>
                   {[
                     [casosAbiertos.length, t.assignedCases, '#B9CEED'],
                     [casosCerrados.length, lang==='es'?'Casos cerrados':'Closed cases', '#27ae60'],
-                    ['$'+ingresoTotal.toFixed(2), t.earnings, '#CAA181'],
+                    ['$'+ingresoTotal.toFixed(2), t.earnings, 'var(--acento)'],
                     [pagosPendientes, t.pending2, '#e74c3c'],
                   ].map(([n,l,c]) => (
                     <div key={l} style={{ ...S.stat, borderLeft:`4px solid ${c}` }}>
@@ -176,7 +171,7 @@ export default function DashboardAbogado() {
                             <td style={S.td}>{c.fecha}</td>
                             <td style={S.td}>{c.hora}</td>
                             <td style={S.td}>{c.especialidad||'—'}</td>
-                            <td style={S.td}>{c.jitsi_room?<a href={'https://meet.jit.si/'+c.jitsi_room} target="_blank" rel="noreferrer" style={{ color:'var(--dorado)', fontWeight:600 }}>📹 {lang==='es'?'Unirse':'Join'}</a>:'—'}</td>
+                            <td style={S.td}>{salaUrl(c)?<a href={salaUrl(c)} target="_blank" rel="noreferrer" style={{ color:'var(--dorado)', fontWeight:600 }}>📹 {lang==='es'?'Unirse':'Join'}</a>:'—'}</td>
                           </tr>
                         ))}</tbody>
                       </table>
@@ -250,16 +245,16 @@ export default function DashboardAbogado() {
                   ) : (
                     <div style={{ overflowX:'auto' }}>
                       <table style={S.table}>
-                        <thead><tr>{[t.dateCol,t.timeCol,t.specialty2,t.room,t.status,lang==='es'?'Acción':'Action'].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+                        <thead><tr>{[t.dateCol,t.timeCol,t.specialty2,t.room,t.status].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
                         <tbody>{consultas.map((c,i)=>{
                           const esProx = c.fecha && c.fecha >= HOY
                           return <tr key={i}>
                             <td style={S.td}>{c.fecha||'—'}</td>
                             <td style={S.td}>{c.hora||'—'}</td>
                             <td style={S.td}>{c.especialidad||'—'}</td>
-                            <td style={S.td}>{c.jitsi_room?<a href={'https://meet.jit.si/'+c.jitsi_room} target="_blank" rel="noreferrer" style={{ color:'var(--dorado)', fontWeight:600 }}>📹 {lang==='es'?'Unirse':'Join'}</a>:'—'}</td>
+                            <td style={S.td}>{salaUrl(c)?<a href={salaUrl(c)} target="_blank" rel="noreferrer" style={{ color:'var(--dorado)', fontWeight:600 }}>📹 {lang==='es'?'Unirse':'Join'}</a>:'—'}</td>
                             <td style={S.td}><span style={{ ...S.badge, background: esProx?'#e3f2fd':c.pagado?'#e8f5e9':'#fff8e1', color: esProx?'#1565c0':c.pagado?'#2e7d32':'#f57f17' }}>{esProx?lang==='es'?'Próxima':'Upcoming':c.pagado?lang==='es'?'Completada':'Completed':lang==='es'?'Pendiente':'Pending'}</span></td>
-                            <td style={S.td}>{!c.pagado && <button onClick={() => marcarPagado(c.id)} style={{ ...S.btn, background:'#e8f5e9', color:'#2e7d32', fontSize:'.75rem', padding:'5px 10px' }}>{t.markPaid}</button>}</td>
+                            
                           </tr>
                         })}</tbody>
                       </table>
@@ -272,8 +267,8 @@ export default function DashboardAbogado() {
               {page==='ingresos' && (
                 <div style={S.card}>
                   <div style={S.cardTitle}>💰 {t.myEarnings}</div>
-                  <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:14, marginBottom:20 }}>
-                    {[['$'+ingresoTotal.toFixed(2), t.earnings, '#CAA181'],[consultas.filter(c=>c.pagado).length, t.consultations, '#27ae60'],[pagosPendientes, t.pending2, '#e74c3c']].map(([n,l,c])=>(
+                  <div className="dash-stats" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:14, marginBottom:20 }}>
+                    {[['$'+ingresoTotal.toFixed(2), t.earnings, 'var(--acento)'],[consultas.filter(c=>c.pagado).length, t.consultations, '#27ae60'],[pagosPendientes, t.pending2, '#e74c3c']].map(([n,l,c])=>(
                       <div key={l} style={{ ...S.stat, borderLeft:`4px solid ${c}` }}>
                         <div style={S.statN}>{n}</div>
                         <div style={S.statL}>{l}</div>
@@ -300,7 +295,7 @@ export default function DashboardAbogado() {
               {page==='perfil' && (
                 <div style={S.card}>
                   <div style={S.cardTitle}>👤 {lang==='es'?'Mi perfil profesional':'My professional profile'}</div>
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+                  <div className="dash-fgrid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
                     {[
                       [lang==='es'?'Nombre':'First name', profile?.nombre||''],
                       [lang==='es'?'Apellido':'Last name', profile?.apellido||''],
@@ -341,7 +336,7 @@ export default function DashboardAbogado() {
             <p style={{ color:'#777', fontSize:'.88rem', marginBottom:16 }}>{lang==='es'?'Describe el resultado final del caso para el expediente del cliente.':'Describe the final outcome of the case for the client file.'}</p>
             <textarea value={resultText} onChange={e => setResultText(e.target.value)} placeholder={t.resultPlaceholder} style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #e0e4ea', borderRadius:9, fontFamily:'var(--sans)', fontSize:'.9rem', color:'#111', outline:'none', resize:'vertical', minHeight:100, marginBottom:16 }}/>
             <div style={{ display:'flex', gap:10 }}>
-              <button onClick={guardarResultado} style={{ flex:1, padding:'11px', background:'linear-gradient(135deg,#CAA181,#b88c6a)', color:'#fff', border:'none', borderRadius:9, fontFamily:'var(--sans)', fontSize:'.9rem', fontWeight:700, cursor:'pointer' }}>{t.saveResult}</button>
+              <button onClick={guardarResultado} style={{ flex:1, padding:'11px', background:'var(--grad-acento)', color:'var(--sobre-acento)', border:'none', borderRadius:9, fontFamily:'var(--sans)', fontSize:'.9rem', fontWeight:700, cursor:'pointer' }}>{t.saveResult}</button>
               <button onClick={() => setResultModal(null)} style={{ padding:'11px 20px', background:'transparent', color:'#666', border:'1.5px solid #e0e4ea', borderRadius:9, fontFamily:'var(--sans)', fontSize:'.9rem', cursor:'pointer' }}>{lang==='es'?'Cancelar':'Cancel'}</button>
             </div>
           </div>
