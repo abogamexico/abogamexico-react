@@ -14,7 +14,7 @@ const styles = {
   actions: { display: 'flex', gap: 10, alignItems: 'center' },
   btnLang: { background: 'rgba(185,206,237,.12)', color: '#fff', border: '1px solid rgba(185,206,237,.3)', padding: '8px 14px', borderRadius: 8, fontSize: '.8rem', fontWeight: 600 },
   btnOutline: { background: 'transparent', color: '#fff', border: '1.5px solid rgba(185,206,237,.4)', padding: '10px 20px', borderRadius: 9, fontSize: '.88rem', fontWeight: 600 },
-  btnGold: { background: 'var(--grad-acento)', color: '#fff', padding: '10px 20px', borderRadius: 9, fontSize: '.88rem', fontWeight: 600, boxShadow: '0 4px 14px rgba(var(--acento-rgb),.3)' },
+  btnGold: { background: 'var(--grad-acento)', color: 'var(--sobre-acento)', padding: '10px 20px', borderRadius: 9, fontSize: '.88rem', fontWeight: 600, boxShadow: '0 4px 14px rgba(var(--acento-rgb),.3)' },
   userName: { color: 'rgba(255,255,255,.75)', fontSize: '.82rem' },
   ham: { flexDirection: 'column', justifyContent: 'center', gap: 5, background: 'none', marginLeft: 'auto', width: 44, height: 44, alignItems: 'center' },
   hamLine: { display: 'block', width: 22, height: 2, background: '#fff', borderRadius: 2 },

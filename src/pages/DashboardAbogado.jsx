@@ -140,7 +140,7 @@ export default function DashboardAbogado() {
                       {profile?.especialidad} · {profile?.estado||'México'}{profile?.verificado ? ' · ✓ Verificado' : ' · ⏳ Pendiente verificación'}
                     </div>
                   </div>
-                  <button onClick={() => setPage('activos')} style={{ background:'var(--grad-acento)', color:'#fff', border:'none', padding:'10px 22px', borderRadius:9, fontSize:'.9rem', fontWeight:600, cursor:'pointer' }}>
+                  <button onClick={() => setPage('activos')} style={{ background:'var(--grad-acento)', color:'var(--sobre-acento)', border:'none', padding:'10px 22px', borderRadius:9, fontSize:'.9rem', fontWeight:600, cursor:'pointer' }}>
                     {lang==='es'?'Ver casos asignados':'View assigned cases'}
                   </button>
                 </div>
@@ -336,7 +336,7 @@ export default function DashboardAbogado() {
             <p style={{ color:'#777', fontSize:'.88rem', marginBottom:16 }}>{lang==='es'?'Describe el resultado final del caso para el expediente del cliente.':'Describe the final outcome of the case for the client file.'}</p>
             <textarea value={resultText} onChange={e => setResultText(e.target.value)} placeholder={t.resultPlaceholder} style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #e0e4ea', borderRadius:9, fontFamily:'var(--sans)', fontSize:'.9rem', color:'#111', outline:'none', resize:'vertical', minHeight:100, marginBottom:16 }}/>
             <div style={{ display:'flex', gap:10 }}>
-              <button onClick={guardarResultado} style={{ flex:1, padding:'11px', background:'var(--grad-acento)', color:'#fff', border:'none', borderRadius:9, fontFamily:'var(--sans)', fontSize:'.9rem', fontWeight:700, cursor:'pointer' }}>{t.saveResult}</button>
+              <button onClick={guardarResultado} style={{ flex:1, padding:'11px', background:'var(--grad-acento)', color:'var(--sobre-acento)', border:'none', borderRadius:9, fontFamily:'var(--sans)', fontSize:'.9rem', fontWeight:700, cursor:'pointer' }}>{t.saveResult}</button>
               <button onClick={() => setResultModal(null)} style={{ padding:'11px 20px', background:'transparent', color:'#666', border:'1.5px solid #e0e4ea', borderRadius:9, fontFamily:'var(--sans)', fontSize:'.9rem', cursor:'pointer' }}>{lang==='es'?'Cancelar':'Cancel'}</button>
             </div>
           </div>

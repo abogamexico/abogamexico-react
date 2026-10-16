@@ -70,7 +70,7 @@ export default function Landing() {
           </h1>
           <p style={{ color:'rgba(255,255,255,.72)', fontSize:'1.05rem', lineHeight:1.78, marginBottom:36, maxWidth:520 }}>{t.heroDesc}</p>
           <div style={{ display:'flex', gap:14, flexWrap:'wrap', marginBottom:52 }}>
-            <button onClick={openConsult} style={{ background:'var(--grad-acento)', color:'#fff', border:'none', padding:'15px 32px', borderRadius:11, fontSize:'1rem', fontWeight:700, cursor:'pointer', boxShadow:'0 8px 24px rgba(var(--acento-rgb),.35)', transition:'all .3s' }}>{t.heroCta1}</button>
+            <button onClick={openConsult} style={{ background:'var(--grad-acento)', color:'var(--sobre-acento)', border:'none', padding:'15px 32px', borderRadius:11, fontSize:'1rem', fontWeight:700, cursor:'pointer', boxShadow:'0 8px 24px rgba(var(--acento-rgb),.35)', transition:'all .3s' }}>{t.heroCta1}</button>
             <button onClick={() => document.getElementById('como-funciona')?.scrollIntoView({behavior:'smooth'})} style={{ background:'transparent', color:'#fff', border:'1.5px solid rgba(185,206,237,.4)', padding:'15px 32px', borderRadius:11, fontSize:'1rem', fontWeight:500, cursor:'pointer', backdropFilter:'blur(4px)', transition:'all .3s' }}>{t.heroCta2}</button>
           </div>
           <div className="hero-stats" style={{ display:'flex', alignItems:'center', flexWrap:'wrap', rowGap:16 }}>
@@ -191,7 +191,7 @@ export default function Landing() {
             <h3 style={{ color:'#fff', fontSize:'1.5rem', marginBottom:10, fontFamily:'var(--display)' }}>{lang==='es'?'¿Eres abogado certificado?':'Are you a certified lawyer?'}</h3>
             <p style={{ color:'rgba(185,206,237,.8)', fontSize:'1rem', maxWidth:480, margin:'0 auto 24px' }}>{lang==='es'?'Únete a nuestra red, recibe clientes en línea y gestiona tu práctica legal 100% remota.':'Join our network, receive clients online and manage your legal practice 100% remotely.'}</p>
             <div style={{ display:'flex', gap:14, justifyContent:'center', flexWrap:'wrap' }}>
-              <button onClick={() => setModal('register')} style={{ background:'var(--grad-acento)', color:'#fff', border:'none', padding:'14px 32px', borderRadius:10, fontSize:'1rem', fontWeight:700, cursor:'pointer', boxShadow:'0 6px 20px rgba(var(--acento-rgb),.3)' }}>{lang==='es'?'Registrarme como abogado':'Register as a lawyer'}</button>
+              <button onClick={() => setModal('register')} style={{ background:'var(--grad-acento)', color:'var(--sobre-acento)', border:'none', padding:'14px 32px', borderRadius:10, fontSize:'1rem', fontWeight:700, cursor:'pointer', boxShadow:'0 6px 20px rgba(var(--acento-rgb),.3)' }}>{lang==='es'?'Registrarme como abogado':'Register as a lawyer'}</button>
               <button onClick={() => setModal('login')} style={{ background:'transparent', color:'#fff', border:'1.5px solid rgba(185,206,237,.4)', padding:'14px 32px', borderRadius:10, fontSize:'1rem', fontWeight:500, cursor:'pointer' }}>{lang==='es'?'Iniciar sesión — Abogados':'Sign in — Lawyers'}</button>
             </div>
           </div>
@@ -206,8 +206,9 @@ export default function Landing() {
             <p style={{ color:'rgba(185,206,237,.8)', fontSize:'1.05rem', maxWidth:480, margin:'0 auto' }}>{t.priceDesc}</p>
           </div>
           <div className="price-card" style={{ maxWidth:520, margin:'0 auto', background:'rgba(255,255,255,.07)', border:'1.5px solid rgba(var(--acento-rgb),.35)', borderRadius:22, padding:'52px 48px', textAlign:'center', boxShadow:'0 20px 60px rgba(0,0,0,.3)' }}>
-            <span style={{ display:'inline-block', background:'var(--grad-acento)', color:'#fff', fontSize:'.78rem', fontWeight:700, letterSpacing:'.08em', padding:'5px 18px', borderRadius:50, marginBottom:28, boxShadow:'0 4px 14px rgba(var(--acento-rgb),.3)' }}>{t.priceBadge}</span>
+            <span style={{ display:'inline-block', background:'var(--grad-acento)', color:'var(--sobre-acento)', fontSize:'.78rem', fontWeight:700, letterSpacing:'.08em', padding:'5px 18px', borderRadius:50, marginBottom:28, boxShadow:'0 4px 14px rgba(var(--acento-rgb),.3)' }}>{t.priceBadge}</span>
             <div style={{ fontFamily:'var(--display)', fontSize:'clamp(3rem,10vw,4rem)', fontWeight:800, color:'#fff', lineHeight:1, marginBottom:28 }}>$49.99 <span style={{ fontSize:'1.1rem', fontWeight:300, color:'var(--celeste)' }}>USD</span></div>
+            <div style={{ color:'var(--celeste)', fontSize:'.9rem', marginTop:-18, marginBottom:28 }}>{lang==='es' ? 'más impuestos · consulta de hasta 60 min' : 'plus taxes · up to 60-minute consultation'}</div>
             <ul style={{ listStyle:'none', textAlign:'left', marginBottom:34 }}>
               {[t.priceFeat1,t.priceFeat2,t.priceFeat3,t.priceFeat4,t.priceFeat5,t.priceFeat6].map((f, i) => (
                 <li key={i} style={{ color:'rgba(255,255,255,.82)', fontSize:'.92rem', padding:'10px 0', borderBottom:'1px solid rgba(185,206,237,.08)', display:'flex', gap:10, alignItems:'center' }}>
@@ -215,7 +216,7 @@ export default function Landing() {
                 </li>
               ))}
             </ul>
-            <button onClick={openConsult} style={{ width:'100%', background:'var(--grad-acento)', color:'#fff', border:'none', padding:'16px', borderRadius:12, fontSize:'1.05rem', fontWeight:700, cursor:'pointer', boxShadow:'0 8px 24px rgba(var(--acento-rgb),.35)', transition:'all .3s' }}>{t.priceBtn}</button>
+            <button onClick={openConsult} style={{ width:'100%', background:'var(--grad-acento)', color:'var(--sobre-acento)', border:'none', padding:'16px', borderRadius:12, fontSize:'1.05rem', fontWeight:700, cursor:'pointer', boxShadow:'0 8px 24px rgba(var(--acento-rgb),.35)', transition:'all .3s' }}>{t.priceBtn}</button>
           </div>
         </div>
       </section>

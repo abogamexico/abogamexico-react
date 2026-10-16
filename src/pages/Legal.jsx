@@ -3,7 +3,7 @@ import Navbar from '../components/Navbar'
 
 // ── Datos del responsable (editar aquí si cambian) ─────────────────
 const RESPONSABLE = 'Rafael Orlando Salcido Hernández'
-const DOMICILIO = 'Calle Ing. Jesús Robles número 19, Colonia Jorge Jiménez Cantú, [C.P.], [Municipio], [Estado], México'
+const DOMICILIO = 'Calle Ing. Jesús Robles número 19, Colonia Jorge Jiménez Cantú, C.P. 52167, Metepec, Estado de México, México'
 const CORREO = 'abogamexicoconsultoria@gmail.com'
 const SITIO = 'abogamexico.com'
 const ACTUALIZADO = '16 de octubre de 2026'
@@ -93,7 +93,7 @@ export function Terminos() {
       <h2>2. Naturaleza del servicio</h2>
       <ul>
         <li>Los abogados de la red son profesionales independientes y son responsables de la asesoría que dan. AbogaMéxico verifica su cédula profesional antes de activarlos, pero no dicta el contenido de su opinión jurídica.</li>
-        <li>La consulta es una <strong>orientación legal por videollamada</strong> de hasta [DURACIÓN] minutos. No incluye representación ante autoridades, redacción de documentos ni seguimiento del caso. Si tu asunto requiere esos servicios, el abogado te explicará los siguientes pasos y su costo, y cualquier acuerdo adicional será directamente entre tú y el abogado.</li>
+        <li>La consulta es una <strong>orientación legal por videollamada</strong> de hasta 60 minutos. No incluye representación ante autoridades, redacción de documentos ni seguimiento del caso. Si tu asunto requiere esos servicios, el abogado te explicará los siguientes pasos y su costo, y cualquier acuerdo adicional será directamente entre tú y el abogado.</li>
         <li>La plataforma no es adecuada para emergencias. Si tienes un plazo legal por vencer o estás detenido, busca atención inmediata.</li>
       </ul>
 
@@ -102,18 +102,17 @@ export function Terminos() {
 
       <h2>4. Precio y pago</h2>
       <ul>
-        <li>Cada consulta cuesta <strong>$49.99 USD</strong> (dólares estadounidenses), impuestos incluidos.</li>
+        <li>Cada consulta cuesta <strong>$49.99 USD</strong> (dólares estadounidenses) más los impuestos aplicables, que se muestran desglosados antes de que confirmes el pago.</li>
         <li>El pago se hace por adelantado con tarjeta de crédito o débito a través de Stripe. Tu banco podría aplicar comisiones por conversión de moneda o por compras internacionales; esas comisiones no dependen de AbogaMéxico.</li>
         <li>La consulta queda confirmada cuando el pago es aprobado. Recibirás la confirmación y el enlace de la videollamada en tu correo.</li>
       </ul>
 
-      <h2>5. Cambios de horario, cancelaciones y reembolsos</h2>
+      <h2>5. Cambios de horario y cancelaciones</h2>
       <ul>
-        <li>Puedes cambiar tu horario sin costo hasta 24 horas antes de la cita.</li>
-        <li>Si cancelas con al menos 24 horas de anticipación, te reembolsamos el 100%.</li>
-        <li>Si cancelas con menos de 24 horas o no te conectas en los primeros 15 minutos, la consulta se considera dada y no hay reembolso.</li>
-        <li>Si el abogado no se presenta o la consulta no puede darse por fallas de la plataforma, podrás elegir entre reprogramarla o recibir el reembolso total.</li>
-        <li>Para cualquiera de estos casos escribe a <a href={'mailto:' + CORREO}>{CORREO}</a>. Los reembolsos se hacen a la misma tarjeta y pueden tardar de 5 a 10 días hábiles en reflejarse, según tu banco.</li>
+        <li>Puedes cambiar el horario de tu consulta sin costo hasta 24 horas antes de la cita, escribiendo a <a href={'mailto:' + CORREO}>{CORREO}</a>.</li>
+        <li>Las consultas pagadas no son reembolsables. Si no puedes asistir, te ofrecemos el cambio de horario dentro del plazo anterior.</li>
+        <li>Si no te conectas en los primeros 15 minutos de la cita sin haber pedido el cambio con 24 horas de anticipación, la consulta se considera dada.</li>
+        <li>Si el abogado no se presenta o la consulta no puede darse por fallas de la plataforma, la reprogramamos sin costo. Si no fuera posible darte el servicio, te devolvemos lo que pagaste, como lo establece la Ley Federal de Protección al Consumidor.</li>
       </ul>
 
       <h2>6. Uso correcto</h2>
@@ -129,7 +128,7 @@ export function Terminos() {
       <p>Podemos actualizar estos términos. La versión vigente siempre estará en {SITIO}/terminos, y aplicará a las consultas que se agenden después de su publicación.</p>
 
       <h2>10. Ley aplicable y quejas</h2>
-      <p>Estos términos se rigen por las leyes de los Estados Unidos Mexicanos. Para cualquier controversia, las partes se someten a los tribunales competentes de [Municipio], [Estado]. Como consumidor, también puedes acudir a la Procuraduría Federal del Consumidor (PROFECO).</p>
+      <p>Estos términos se rigen por las leyes de los Estados Unidos Mexicanos. Para cualquier controversia, las partes se someten a los tribunales competentes del Estado de México. Como consumidor, también puedes acudir a la Procuraduría Federal del Consumidor (PROFECO).</p>
     </LegalLayout>
   )
 }

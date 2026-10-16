@@ -170,7 +170,7 @@ export default function Dashboard() {
                     <div style={{ fontFamily:'var(--display)', fontSize:'1.3rem', fontWeight:700, color:'#fff', marginBottom:4 }}>{t.welcome}, {nombre} 👋</div>
                     <div style={{ color:'rgba(185,206,237,.75)', fontSize:'.88rem' }}>{t.welcomeSub}</div>
                   </div>
-                  <button onClick={() => { setPage('agendar'); setAgSuccess(null) }} style={{ ...S.btn, background:'var(--grad-acento)', color:'#fff', boxShadow:'0 4px 14px rgba(var(--acento-rgb),.3)' }}>{t.newConsult}</button>
+                  <button onClick={() => { setPage('agendar'); setAgSuccess(null) }} style={{ ...S.btn, background:'var(--grad-acento)', color:'var(--sobre-acento)', boxShadow:'0 4px 14px rgba(var(--acento-rgb),.3)' }}>{t.newConsult}</button>
                 </div>
                 <div className="dash-stats" style={S.statsRow}>
                   {[[activos.length, t.activeCases,'#B9CEED'],[cerrados.length,t.closedCases,'#27ae60'],[data.consultas.length,t.totalConsults,'var(--acento)'],['$'+totalPagado.toFixed(2),t.totalPaid,'#e74c3c']].map(([n,l,c]) => (
@@ -202,7 +202,7 @@ export default function Dashboard() {
                     <div style={S.empty}>
                       <div style={{ fontSize:'2.5rem', marginBottom:10 }}>📅</div>
                       <p style={{ marginBottom:14 }}>{t.noUpcoming}</p>
-                      <button onClick={() => { setPage('agendar'); setAgSuccess(null) }} style={{ ...S.btn, background:'var(--grad-acento)', color:'#fff' }}>{t.bookFirst}</button>
+                      <button onClick={() => { setPage('agendar'); setAgSuccess(null) }} style={{ ...S.btn, background:'var(--grad-acento)', color:'var(--sobre-acento)' }}>{t.bookFirst}</button>
                     </div>
                   ) : (
                     <div style={{ overflowX:'auto' }}>
@@ -230,7 +230,7 @@ export default function Dashboard() {
                       <p style={{ color:'#888', marginBottom:8 }}>{t.yourRoom}</p>
                       <a href={'https://meet.jit.si/'+agSuccess.rid} target="_blank" rel="noreferrer" style={{ display:'inline-block', background:'#eef3ff', border:'1px solid var(--celeste)', color:'var(--azul)', fontSize:'.76rem', fontFamily:'monospace', padding:'8px 16px', borderRadius:8, margin:'0 0 20px' }}>meet.jit.si/{agSuccess.rid}</a>
                       <div style={{ display:'flex', gap:10, justifyContent:'center', flexWrap:'wrap' }}>
-                        <a href={'https://meet.jit.si/'+agSuccess.rid} target="_blank" rel="noreferrer" style={{ ...S.btn, background:'var(--grad-acento)', color:'#fff' }}>{t.joinRoom}</a>
+                        <a href={'https://meet.jit.si/'+agSuccess.rid} target="_blank" rel="noreferrer" style={{ ...S.btn, background:'var(--grad-acento)', color:'var(--sobre-acento)' }}>{t.joinRoom}</a>
                         <button onClick={() => setAgSuccess(null)} style={{ ...S.btn, background:'transparent', color:'var(--azul)', border:'1.5px solid rgba(0,24,61,.2)' }}>{t.newBooking}</button>
                         <button onClick={() => setPage('home')} style={{ ...S.btn, background:'transparent', color:'var(--azul)', border:'1.5px solid rgba(0,24,61,.2)' }}>{t.goHome}</button>
                       </div>
@@ -262,9 +262,9 @@ export default function Dashboard() {
                       <div style={{ marginTop:20, background:'linear-gradient(135deg,#f8faff,#f0f4f8)', border:'1px solid #dde8f8', borderRadius:12, padding:18, display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
                         <div>
                           <div style={{ fontFamily:'var(--display)', fontSize:'1.8rem', fontWeight:800, color:'var(--azul)' }}>$49.99 <span style={{ fontSize:'1rem', fontWeight:400, color:'#888' }}>USD</span></div>
-                          <div style={{ fontSize:'.78rem', color:'#888', marginTop:2 }}>Videollamada · 1 hora</div>
+                          <div style={{ fontSize:'.78rem', color:'#888', marginTop:2 }}>{lang==='es' ? 'Más impuestos · videollamada de hasta 60 min' : 'Plus taxes · up to 60-min video call'}</div>
                         </div>
-                        <button onClick={agendar} disabled={agLoading} style={{ ...S.btn, background:'var(--grad-acento)', color:'#fff', padding:'12px 28px', boxShadow:'0 6px 18px rgba(var(--acento-rgb),.3)', opacity:agLoading?.8:1 }}>
+                        <button onClick={agendar} disabled={agLoading} style={{ ...S.btn, background:'var(--grad-acento)', color:'var(--sobre-acento)', padding:'12px 28px', boxShadow:'0 6px 18px rgba(var(--acento-rgb),.3)', opacity:agLoading?.8:1 }}>
                           {agLoading ? t.processing : t.payConfirm}
                         </button>
                       </div>
@@ -282,7 +282,7 @@ export default function Dashboard() {
                     <div style={S.empty}>
                       <div style={{ fontSize:'2.5rem', marginBottom:10 }}>📁</div>
                       <p style={{ marginBottom:14 }}>{t.noCases}</p>
-                      <button onClick={() => { setPage('agendar'); setAgSuccess(null) }} style={{ ...S.btn, background:'var(--grad-acento)', color:'#fff' }}>{t.bookConsult}</button>
+                      <button onClick={() => { setPage('agendar'); setAgSuccess(null) }} style={{ ...S.btn, background:'var(--grad-acento)', color:'var(--sobre-acento)' }}>{t.bookConsult}</button>
                     </div>
                   ) : (
                     <div style={{ overflowX:'auto' }}>
@@ -312,7 +312,7 @@ export default function Dashboard() {
                     <div style={S.empty}>
                       <div style={{ fontSize:'2.5rem', marginBottom:10 }}>📅</div>
                       <p style={{ marginBottom:14 }}>{t.noUpcoming}</p>
-                      <button onClick={() => { setPage('agendar'); setAgSuccess(null) }} style={{ ...S.btn, background:'var(--grad-acento)', color:'#fff' }}>{t.bookConsult}</button>
+                      <button onClick={() => { setPage('agendar'); setAgSuccess(null) }} style={{ ...S.btn, background:'var(--grad-acento)', color:'var(--sobre-acento)' }}>{t.bookConsult}</button>
                     </div>
                   ) : (
                     <div style={{ overflowX:'auto' }}>
@@ -386,7 +386,7 @@ export default function Dashboard() {
                       <input style={{...S.input,opacity:.6}} value={user.email} disabled/>
                     </div>
                   </div>
-                  <button onClick={saveProfile} disabled={savingProfile} style={{ ...S.btn, background:'var(--grad-acento)', color:'#fff', marginTop:18, opacity:savingProfile?.8:1 }}>
+                  <button onClick={saveProfile} disabled={savingProfile} style={{ ...S.btn, background:'var(--grad-acento)', color:'var(--sobre-acento)', marginTop:18, opacity:savingProfile?.8:1 }}>
                     {savingProfile ? '...' : t.saveChanges}
                   </button>
                 </div>

@@ -20,7 +20,7 @@ const S = {
   label: { display:'block',fontSize:'.78rem',fontWeight:600,color:'#555',marginBottom:5 },
   input: { width:'100%',padding:'11px 13px',border:'1.5px solid #e0e4ea',borderRadius:9,fontFamily:'var(--sans)',fontSize:'.9rem',color:'#111',outline:'none',transition:'border-color .2s',background:'#fff' },
   row: { display:'grid',gridTemplateColumns:'1fr 1fr',gap:12 },
-  btn: { width:'100%',marginTop:6,padding:'13px',borderRadius:10,border:'none',fontFamily:'var(--sans)',fontSize:'.95rem',fontWeight:700,cursor:'pointer',background:'var(--grad-acento)',color:'#fff',boxShadow:'0 6px 20px rgba(var(--acento-rgb),.3)',transition:'all .2s' },
+  btn: { width:'100%',marginTop:6,padding:'13px',borderRadius:10,border:'none',fontFamily:'var(--sans)',fontSize:'.95rem',fontWeight:700,cursor:'pointer',background:'var(--grad-acento)',color:'var(--sobre-acento)',boxShadow:'0 6px 20px rgba(var(--acento-rgb),.3)',transition:'all .2s' },
   note: { fontSize:'.78rem',color:'#999',textAlign:'center',marginTop:12 },
   noteLink: { color:'var(--dorado)',cursor:'pointer',fontWeight:600 },
   err: { color:'#dc2626',fontSize:'.76rem',marginTop:4 },

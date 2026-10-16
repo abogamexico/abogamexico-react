@@ -2,10 +2,11 @@
 :root {
   /* ── Marca ──────────────────────────────────────────────
      Para cambiar el color de acento de TODO el sitio, edita
-     solo estas tres líneas (--acento, --acento-oscuro y --acento-rgb). */
-  --acento: #CAA181;
-  --acento-oscuro: #b88c6a;
-  --acento-rgb: 202,161,129;
+     solo estas líneas (--acento, --acento-oscuro, --acento-rgb y --sobre-acento). */
+  --acento: #D4AF37;          /* oro clásico */
+  --acento-oscuro: #B8912A;
+  --acento-rgb: 212,175,55;
+  --sobre-acento: #00183D;    /* color del texto encima de los botones dorados */
   --grad-acento: linear-gradient(135deg, var(--acento), var(--acento-oscuro));
 
   --azul: #00183D; --celeste: #B9CEED; --dorado: var(--acento);
@@ -52,7 +53,7 @@ img { display: block; max-width: 100%; }
     display: block; width: 100%; text-align: left; padding: 14px 12px; border-radius: 10px;
     background: transparent; color: #fff; font-size: 1rem; font-weight: 500;
   }
-  .nav-drawer .drawer-cta { background: var(--grad-acento); text-align: center; font-weight: 700; margin-top: 6px; }
+  .nav-drawer .drawer-cta { background: var(--grad-acento); color: var(--sobre-acento); text-align: center; font-weight: 700; margin-top: 6px; }
   .nav-drawer .drawer-sec { border: 1.5px solid rgba(185,206,237,.35); text-align: center; }
 
   .g2 { grid-template-columns: 1fr !important; }
