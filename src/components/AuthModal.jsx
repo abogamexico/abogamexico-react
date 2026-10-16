@@ -20,7 +20,7 @@ const S = {
   label: { display:'block',fontSize:'.78rem',fontWeight:600,color:'#555',marginBottom:5 },
   input: { width:'100%',padding:'11px 13px',border:'1.5px solid #e0e4ea',borderRadius:9,fontFamily:'var(--sans)',fontSize:'.9rem',color:'#111',outline:'none',transition:'border-color .2s',background:'#fff' },
   row: { display:'grid',gridTemplateColumns:'1fr 1fr',gap:12 },
-  btn: { width:'100%',marginTop:6,padding:'13px',borderRadius:10,border:'none',fontFamily:'var(--sans)',fontSize:'.95rem',fontWeight:700,cursor:'pointer',background:'linear-gradient(135deg,#CAA181,#b88c6a)',color:'#fff',boxShadow:'0 6px 20px rgba(202,161,129,.3)',transition:'all .2s' },
+  btn: { width:'100%',marginTop:6,padding:'13px',borderRadius:10,border:'none',fontFamily:'var(--sans)',fontSize:'.95rem',fontWeight:700,cursor:'pointer',background:'var(--grad-acento)',color:'#fff',boxShadow:'0 6px 20px rgba(var(--acento-rgb),.3)',transition:'all .2s' },
   note: { fontSize:'.78rem',color:'#999',textAlign:'center',marginTop:12 },
   noteLink: { color:'var(--dorado)',cursor:'pointer',fontWeight:600 },
   err: { color:'#dc2626',fontSize:'.76rem',marginTop:4 },
@@ -80,7 +80,7 @@ export default function AuthModal({ type, onClose, onSwitch }) {
     if (form.password.length < 8) { setError('La contraseña debe tener al menos 8 caracteres.'); return }
     setError(''); setLoading(true)
     try {
-      const { user } = await signUp(form.email, form.password, { nombre: form.nombre, apellido: form.apellido, tipo: 'cliente' })
+      const { user } = await signUp(form.email, form.password, { nombre: form.nombre, apellido: form.apellido, tipo: 'cliente', telefono: form.telefono, pais: form.pais, ciudad: form.ciudad })
       if (user) {
         await supabase.from('usuarios').upsert({ id: user.id, email: form.email, nombre: form.nombre, apellido: form.apellido, pais: form.pais, telefono: form.telefono, ciudad: form.ciudad })
       }
@@ -96,7 +96,7 @@ export default function AuthModal({ type, onClose, onSwitch }) {
     if (form.password.length < 8) { setError('La contraseña debe tener al menos 8 caracteres.'); return }
     setError(''); setLoading(true)
     try {
-      const { user } = await signUp(form.email, form.password, { nombre: form.nombre, apellido: form.apellido, tipo: 'abogado', cedula: form.cedula })
+      const { user } = await signUp(form.email, form.password, { nombre: form.nombre, apellido: form.apellido, tipo: 'abogado', cedula: form.cedula, telefono: form.telefono, especialidad: form.especialidad, estado: form.estado, ciudad: form.ciudad, bio: form.bio })
       if (user) {
         await supabase.from('abogados').upsert({ id: user.id, email: form.email, nombre: form.nombre, apellido: form.apellido, telefono: form.telefono, cedula: form.cedula, especialidad: form.especialidad, estado: form.estado, ciudad: form.ciudad, bio: form.bio, verificado: false })
       }
@@ -173,7 +173,7 @@ export default function AuthModal({ type, onClose, onSwitch }) {
                   <div style={S.fg}><label style={S.label}>{t.minPass}</label><input style={S.input} type="password" value={form.password} onChange={e => set('password',e.target.value)} placeholder="••••••••"/></div>
                   {error && <p style={S.err}>{error}</p>}
                   <button style={{...S.btn, opacity:loading?.8:1}} onClick={handleRegisterClient} disabled={loading}>{loading ? 'Creando...' : t.createBtn}</button>
-                  <p style={S.note}>{t.terms} <span style={S.noteLink}>{t.termsLink}</span></p>
+                  <p style={S.note}>{t.terms} <a href="/terminos" target="_blank" rel="noreferrer" style={S.noteLink}>{t.termsLink}</a> y el <a href="/privacidad" target="_blank" rel="noreferrer" style={S.noteLink}>Aviso de privacidad</a></p>
                   <p style={S.note}>{t.alreadyAccount} <span style={S.noteLink} onClick={() => onSwitch('login')}>{t.loginLink}</span></p>
                 </>
               ) : (

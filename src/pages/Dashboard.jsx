@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
 import { supabase } from '../lib/supabase'
+import { LogoMark } from '../components/Logo'
+
+// Enlace de la videollamada: Google Meet si existe; si no, la sala anterior de Jitsi
+const salaUrl = c => c.meet_link || (c.jitsi_room ? 'https://meet.jit.si/' + c.jitsi_room : null)
 
 const S = {
   nav: { background:'var(--azul)', height:62, display:'flex', alignItems:'center', padding:'0 28px', gap:16, position:'sticky', top:0, zIndex:100, boxShadow:'0 2px 16px rgba(0,0,0,.25)' },
@@ -70,7 +74,7 @@ export default function Dashboard() {
     setLoading(true)
     const [casosRes, consultasRes, profileRes] = await Promise.all([
       supabase.from('casos').select('*').eq('cliente_id', user.id).order('created_at', { ascending: false }),
-      supabase.from('consultas').select('*').order('fecha', { ascending: false }),
+      supabase.from('consultas').select('*').eq('cliente_id', user.id).order('fecha', { ascending: false }),
       supabase.from('usuarios').select('*').eq('id', user.id).single()
     ])
     const p = profileRes.data || {}
@@ -118,23 +122,23 @@ export default function Dashboard() {
       {/* NAV */}
       <nav style={S.nav}>
         <a href="/" style={{ display:'flex', alignItems:'center', gap:10, textDecoration:'none' }}>
-          <svg viewBox="0 0 230 160" width="30" height="21"><polygon points="0,155 31,155 73,0 42,0" fill="#000"/><polygon points="68,0 99,0 123,155 92,155" fill="#000"/><polygon points="105,155 136,155 169,0 138,0" fill="#000"/><polygon points="165,0 196,0 230,155 199,155" fill="#000"/><rect x="53" y="83" width="96" height="16" rx="3" fill="#B9CEED"/></svg>
+          <LogoMark size={30} />
           <div style={{ width:1, height:22, background:'rgba(185,206,237,.25)' }}/>
           <div style={{ display:'flex', flexDirection:'column', lineHeight:1.1 }}>
-            <span style={{ fontFamily:'var(--display)', fontSize:'.92rem', fontWeight:700, color:'#fff', letterSpacing:'.06em' }}>ABOGAMÉXICO</span>
+            <span style={{ fontFamily:'var(--display)', fontSize:'.98rem', fontWeight:800, color:'#fff' }}>Aboga<span style={{ color:'var(--acento)' }}>México</span></span>
             <span style={{ fontSize:'.55rem', color:'var(--celeste)', letterSpacing:'.08em' }}>Mi Panel</span>
           </div>
         </a>
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:10 }}>
           <button onClick={toggleLang} style={{ background:'rgba(185,206,237,.1)', color:'#fff', border:'1px solid rgba(185,206,237,.25)', padding:'7px 13px', borderRadius:7, fontSize:'.8rem', fontWeight:600, cursor:'pointer' }}>🌐 {lang==='es'?'EN':'ES'}</button>
-          <span style={{ color:'rgba(255,255,255,.7)', fontSize:'.82rem' }}>{nombre}</span>
+          <span className="dash-nav-name" style={{ color:'rgba(255,255,255,.7)', fontSize:'.82rem' }}>{nombre}</span>
           <button onClick={handleSignOut} style={{ background:'transparent', color:'#fff', border:'1.5px solid rgba(185,206,237,.35)', padding:'7px 16px', borderRadius:7, fontSize:'.82rem', fontWeight:600, cursor:'pointer' }}>{t.navSignOut}</button>
         </div>
       </nav>
 
-      <div style={S.layout}>
+      <div className="dash-layout" style={S.layout}>
         {/* SIDEBAR */}
-        <aside style={S.sidebar}>
+        <aside className="dash-sidebar" style={S.sidebar}>
           {[['home','🏠', lang==='es'?'Inicio':'Home'],
             ['agendar','📅',t.bookConsult],
             ['activos','📂',t.activeCases + (activos.length?' ('+activos.length+')':'')],
@@ -166,10 +170,10 @@ export default function Dashboard() {
                     <div style={{ fontFamily:'var(--display)', fontSize:'1.3rem', fontWeight:700, color:'#fff', marginBottom:4 }}>{t.welcome}, {nombre} 👋</div>
                     <div style={{ color:'rgba(185,206,237,.75)', fontSize:'.88rem' }}>{t.welcomeSub}</div>
                   </div>
-                  <button onClick={() => { setPage('agendar'); setAgSuccess(null) }} style={{ ...S.btn, background:'linear-gradient(135deg,#CAA181,#b88c6a)', color:'#fff', boxShadow:'0 4px 14px rgba(202,161,129,.3)' }}>{t.newConsult}</button>
+                  <button onClick={() => { setPage('agendar'); setAgSuccess(null) }} style={{ ...S.btn, background:'var(--grad-acento)', color:'#fff', boxShadow:'0 4px 14px rgba(var(--acento-rgb),.3)' }}>{t.newConsult}</button>
                 </div>
-                <div style={S.statsRow}>
-                  {[[activos.length, t.activeCases,'#B9CEED'],[cerrados.length,t.closedCases,'#27ae60'],[data.consultas.length,t.totalConsults,'#CAA181'],['$'+totalPagado.toFixed(2),t.totalPaid,'#e74c3c']].map(([n,l,c]) => (
+                <div className="dash-stats" style={S.statsRow}>
+                  {[[activos.length, t.activeCases,'#B9CEED'],[cerrados.length,t.closedCases,'#27ae60'],[data.consultas.length,t.totalConsults,'var(--acento)'],['$'+totalPagado.toFixed(2),t.totalPaid,'#e74c3c']].map(([n,l,c]) => (
                     <div key={l} style={{ ...S.stat, borderLeft:`4px solid ${c}` }}>
                       <div style={S.statN}>{n}</div>
                       <div style={S.statL}>{l}</div>
@@ -198,7 +202,7 @@ export default function Dashboard() {
                     <div style={S.empty}>
                       <div style={{ fontSize:'2.5rem', marginBottom:10 }}>📅</div>
                       <p style={{ marginBottom:14 }}>{t.noUpcoming}</p>
-                      <button onClick={() => { setPage('agendar'); setAgSuccess(null) }} style={{ ...S.btn, background:'linear-gradient(135deg,#CAA181,#b88c6a)', color:'#fff' }}>{t.bookFirst}</button>
+                      <button onClick={() => { setPage('agendar'); setAgSuccess(null) }} style={{ ...S.btn, background:'var(--grad-acento)', color:'#fff' }}>{t.bookFirst}</button>
                     </div>
                   ) : (
                     <div style={{ overflowX:'auto' }}>
@@ -206,7 +210,7 @@ export default function Dashboard() {
                         <thead><tr>{[t.dateCol,t.timeCol,t.specialty2,t.room].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
                         <tbody>{proximas.slice(0,3).map((c,i)=>(
                           <tr key={i}><td style={S.td}>{c.fecha}</td><td style={S.td}>{c.hora}</td><td style={S.td}>{c.especialidad}</td>
-                          <td style={S.td}>{c.jitsi_room?<a href={'https://meet.jit.si/'+c.jitsi_room} target="_blank" rel="noreferrer" style={{ color:'var(--dorado)', fontWeight:600 }}>📹 {t.join}</a>:'—'}</td></tr>
+                          <td style={S.td}>{salaUrl(c)?<a href={salaUrl(c)} target="_blank" rel="noreferrer" style={{ color:'var(--dorado)', fontWeight:600 }}>📹 {t.join}</a>:'—'}</td></tr>
                         ))}</tbody>
                       </table>
                     </div>
@@ -226,7 +230,7 @@ export default function Dashboard() {
                       <p style={{ color:'#888', marginBottom:8 }}>{t.yourRoom}</p>
                       <a href={'https://meet.jit.si/'+agSuccess.rid} target="_blank" rel="noreferrer" style={{ display:'inline-block', background:'#eef3ff', border:'1px solid var(--celeste)', color:'var(--azul)', fontSize:'.76rem', fontFamily:'monospace', padding:'8px 16px', borderRadius:8, margin:'0 0 20px' }}>meet.jit.si/{agSuccess.rid}</a>
                       <div style={{ display:'flex', gap:10, justifyContent:'center', flexWrap:'wrap' }}>
-                        <a href={'https://meet.jit.si/'+agSuccess.rid} target="_blank" rel="noreferrer" style={{ ...S.btn, background:'linear-gradient(135deg,#CAA181,#b88c6a)', color:'#fff' }}>{t.joinRoom}</a>
+                        <a href={'https://meet.jit.si/'+agSuccess.rid} target="_blank" rel="noreferrer" style={{ ...S.btn, background:'var(--grad-acento)', color:'#fff' }}>{t.joinRoom}</a>
                         <button onClick={() => setAgSuccess(null)} style={{ ...S.btn, background:'transparent', color:'var(--azul)', border:'1.5px solid rgba(0,24,61,.2)' }}>{t.newBooking}</button>
                         <button onClick={() => setPage('home')} style={{ ...S.btn, background:'transparent', color:'var(--azul)', border:'1.5px solid rgba(0,24,61,.2)' }}>{t.goHome}</button>
                       </div>
@@ -235,7 +239,7 @@ export default function Dashboard() {
                     <>
                       <div style={S.cardTitle}>{t.agendarTitle}</div>
                       <p style={{ color:'#777', fontSize:'.88rem', marginBottom:20 }}>{t.agendarDesc}</p>
-                      <div style={S.fgrid}>
+                      <div className="dash-fgrid" style={S.fgrid}>
                         <div style={S.fg}>
                           <label style={S.label}>{t.legalSpec}</label>
                           <select style={S.select} value={agForm.esp} onChange={e => setAgForm(f=>({...f,esp:e.target.value}))}>{ESPECIALIDADES.map(e=><option key={e}>{e}</option>)}</select>
@@ -260,7 +264,7 @@ export default function Dashboard() {
                           <div style={{ fontFamily:'var(--display)', fontSize:'1.8rem', fontWeight:800, color:'var(--azul)' }}>$49.99 <span style={{ fontSize:'1rem', fontWeight:400, color:'#888' }}>USD</span></div>
                           <div style={{ fontSize:'.78rem', color:'#888', marginTop:2 }}>Videollamada · 1 hora</div>
                         </div>
-                        <button onClick={agendar} disabled={agLoading} style={{ ...S.btn, background:'linear-gradient(135deg,#CAA181,#b88c6a)', color:'#fff', padding:'12px 28px', boxShadow:'0 6px 18px rgba(202,161,129,.3)', opacity:agLoading?.8:1 }}>
+                        <button onClick={agendar} disabled={agLoading} style={{ ...S.btn, background:'var(--grad-acento)', color:'#fff', padding:'12px 28px', boxShadow:'0 6px 18px rgba(var(--acento-rgb),.3)', opacity:agLoading?.8:1 }}>
                           {agLoading ? t.processing : t.payConfirm}
                         </button>
                       </div>
@@ -278,7 +282,7 @@ export default function Dashboard() {
                     <div style={S.empty}>
                       <div style={{ fontSize:'2.5rem', marginBottom:10 }}>📁</div>
                       <p style={{ marginBottom:14 }}>{t.noCases}</p>
-                      <button onClick={() => { setPage('agendar'); setAgSuccess(null) }} style={{ ...S.btn, background:'linear-gradient(135deg,#CAA181,#b88c6a)', color:'#fff' }}>{t.bookConsult}</button>
+                      <button onClick={() => { setPage('agendar'); setAgSuccess(null) }} style={{ ...S.btn, background:'var(--grad-acento)', color:'#fff' }}>{t.bookConsult}</button>
                     </div>
                   ) : (
                     <div style={{ overflowX:'auto' }}>
@@ -308,7 +312,7 @@ export default function Dashboard() {
                     <div style={S.empty}>
                       <div style={{ fontSize:'2.5rem', marginBottom:10 }}>📅</div>
                       <p style={{ marginBottom:14 }}>{t.noUpcoming}</p>
-                      <button onClick={() => { setPage('agendar'); setAgSuccess(null) }} style={{ ...S.btn, background:'linear-gradient(135deg,#CAA181,#b88c6a)', color:'#fff' }}>{t.bookConsult}</button>
+                      <button onClick={() => { setPage('agendar'); setAgSuccess(null) }} style={{ ...S.btn, background:'var(--grad-acento)', color:'#fff' }}>{t.bookConsult}</button>
                     </div>
                   ) : (
                     <div style={{ overflowX:'auto' }}>
@@ -320,7 +324,7 @@ export default function Dashboard() {
                             <td style={S.td}>{c.fecha||'—'}</td>
                             <td style={S.td}>{c.hora||'—'}</td>
                             <td style={S.td}>{c.especialidad||'—'}</td>
-                            <td style={S.td}>{c.jitsi_room?<a href={'https://meet.jit.si/'+c.jitsi_room} target="_blank" rel="noreferrer" style={{ color:'var(--dorado)', fontWeight:600 }}>📹 {t.join}</a>:'—'}</td>
+                            <td style={S.td}>{salaUrl(c)?<a href={salaUrl(c)} target="_blank" rel="noreferrer" style={{ color:'var(--dorado)', fontWeight:600 }}>📹 {t.join}</a>:'—'}</td>
                             <td style={S.td}><Badge status={esProx?'proxima':c.pagado?'pagado':'pendiente'} t={t}/></td>
                           </tr>
                         })}</tbody>
@@ -370,7 +374,7 @@ export default function Dashboard() {
                   <div style={{ width:72, height:72, borderRadius:'50%', background:'linear-gradient(135deg,var(--azul),var(--celeste))', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'var(--display)', fontSize:'1.6rem', fontWeight:700, color:'#fff', marginBottom:20 }}>
                     {(profileForm.nombre||'?')[0]?.toUpperCase()}{(profileForm.apellido||'')[0]?.toUpperCase()}
                   </div>
-                  <div style={S.fgrid}>
+                  <div className="dash-fgrid" style={S.fgrid}>
                     {[[t.firstName,'nombre'],[t.lastName,'apellido'],[t.phone,'telefono'],[t.country,'pais'],[t.city,'ciudad']].map(([label,key])=>(
                       <div key={key} style={S.fg}>
                         <label style={S.label}>{label}</label>
@@ -382,7 +386,7 @@ export default function Dashboard() {
                       <input style={{...S.input,opacity:.6}} value={user.email} disabled/>
                     </div>
                   </div>
-                  <button onClick={saveProfile} disabled={savingProfile} style={{ ...S.btn, background:'linear-gradient(135deg,#CAA181,#b88c6a)', color:'#fff', marginTop:18, opacity:savingProfile?.8:1 }}>
+                  <button onClick={saveProfile} disabled={savingProfile} style={{ ...S.btn, background:'var(--grad-acento)', color:'#fff', marginTop:18, opacity:savingProfile?.8:1 }}>
                     {savingProfile ? '...' : t.saveChanges}
                   </button>
                 </div>
