@@ -5,6 +5,31 @@
 --  Supabase → SQL Editor → New query → pega TODO → Run.
 -- ════════════════════════════════════════════════════════════════
 
+-- 0) Asegurar que usuarios.id y abogados.id sean únicos (llave primaria).
+--    Sin esto no se pueden crear relaciones ni guardar perfiles al registrarse.
+do $$
+declare t text;
+begin
+  foreach t in array array['usuarios','abogados'] loop
+    -- quitar filas sin id o repetidas (las tablas deberían estar vacías)
+    execute format('delete from public.%I where id is null', t);
+    execute format('delete from public.%I a using public.%I b where a.ctid < b.ctid and a.id = b.id', t, t);
+    execute format('alter table public.%I alter column id set not null', t);
+    if not exists (
+      select 1 from pg_index i
+      join pg_attribute att on att.attrelid = i.indrelid and att.attnum = any(i.indkey)
+      where i.indrelid = ('public.' || t)::regclass and (i.indisprimary or i.indisunique)
+        and i.indnatts = 1 and att.attname = 'id'
+    ) then
+      if exists (select 1 from pg_index where indrelid = ('public.' || t)::regclass and indisprimary) then
+        execute format('alter table public.%I add constraint %I unique (id)', t, t || '_id_key');
+      else
+        execute format('alter table public.%I add primary key (id)', t);
+      end if;
+    end if;
+  end loop;
+end $$;
+
 do $$
 begin
   -- casos.cliente_id → usuarios.id
