@@ -4,7 +4,32 @@
 --  Es seguro correrlo más de una vez. Si algo falla, no se aplica nada.
 -- ════════════════════════════════════════════════════════════════
 
--- 0) Corregir el tipo de id en usuarios y abogados ------------------
+-- 0a) Quitar reglas y enlaces anteriores -------------------------------
+--     (las reglas viejas usan la columna id y no dejan cambiar su tipo;
+--      las nuevas se crean más abajo)
+do $$
+declare r record;
+begin
+  -- reglas (policies) de las 4 tablas
+  for r in select policyname, tablename from pg_policies
+           where schemaname = 'public' and tablename in ('usuarios','abogados','casos','consultas')
+  loop
+    execute format('drop policy %I on public.%I', r.policyname, r.tablename);
+  end loop;
+  -- llaves foráneas de otras tablas que apunten al id numérico de usuarios/abogados
+  for r in select c.conname, c.conrelid::regclass as tabla
+           from pg_constraint c
+           where c.contype = 'f'
+             and c.confrelid in ('public.usuarios'::regclass, 'public.abogados'::regclass)
+             and (select data_type from information_schema.columns
+                  where table_schema = 'public' and table_name = c.confrelid::regclass::text
+                    and column_name = 'id') <> 'uuid'
+  loop
+    execute format('alter table %s drop constraint %I', r.tabla, r.conname);
+  end loop;
+end $$;
+
+-- 0b) Corregir el tipo de id en usuarios y abogados ------------------
 --    El id de estas tablas era un número (bigint), pero Supabase
 --    identifica a cada persona con un UUID. Por eso los perfiles nunca
 --    se guardaban (las dos tablas están vacías). Se cambia a uuid.
@@ -65,16 +90,6 @@ alter table public.abogados  enable row level security;
 alter table public.casos     enable row level security;
 alter table public.consultas enable row level security;
 
--- Borrar reglas anteriores de estas 4 tablas para empezar limpio
-do $$
-declare r record;
-begin
-  for r in select policyname, tablename from pg_policies
-           where schemaname = 'public' and tablename in ('usuarios','abogados','casos','consultas')
-  loop
-    execute format('drop policy %I on public.%I', r.policyname, r.tablename);
-  end loop;
-end $$;
 
 -- 3) Reglas ------------------------------------------------------------
 -- usuarios (clientes): cada quien ve y edita solo su perfil;
