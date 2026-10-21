@@ -1,8 +1,49 @@
 -- ════════════════════════════════════════════════════════════════
 --  AbogaMéxico · 001 · Seguridad de la base de datos
 --  Cómo usarlo: Supabase → SQL Editor → New query → pega TODO → Run.
---  Es seguro correrlo más de una vez.
+--  Es seguro correrlo más de una vez. Si algo falla, no se aplica nada.
 -- ════════════════════════════════════════════════════════════════
+
+-- 0) Corregir el tipo de id en usuarios y abogados ------------------
+--    El id de estas tablas era un número (bigint), pero Supabase
+--    identifica a cada persona con un UUID. Por eso los perfiles nunca
+--    se guardaban (las dos tablas están vacías). Se cambia a uuid.
+--    Si alguna tabla ya tuviera datos, el script se detiene sin tocar nada.
+do $$
+declare t text; tiene_datos boolean;
+begin
+  foreach t in array array['usuarios','abogados'] loop
+    if (select data_type from information_schema.columns
+        where table_schema='public' and table_name=t and column_name='id') <> 'uuid' then
+      execute format('select exists (select 1 from public.%I)', t) into tiene_datos;
+      if tiene_datos then
+        raise exception 'La tabla % ya tiene datos; avisa a Claude antes de continuar.', t;
+      end if;
+      execute format('alter table public.%I alter column id drop identity if exists', t);
+      execute format('alter table public.%I alter column id drop default', t);
+      execute format('alter table public.%I alter column id type uuid using gen_random_uuid()', t);
+      execute format('alter table public.%I add constraint %I foreign key (id) references auth.users(id) on delete cascade', t, t || '_id_auth_fkey');
+    end if;
+  end loop;
+end $$;
+
+-- Columnas que usa el registro (se agregan solo si faltan)
+alter table public.usuarios add column if not exists email text;
+alter table public.usuarios add column if not exists nombre text;
+alter table public.usuarios add column if not exists apellido text;
+alter table public.usuarios add column if not exists telefono text;
+alter table public.usuarios add column if not exists pais text;
+alter table public.usuarios add column if not exists ciudad text;
+alter table public.abogados add column if not exists email text;
+alter table public.abogados add column if not exists nombre text;
+alter table public.abogados add column if not exists apellido text;
+alter table public.abogados add column if not exists telefono text;
+alter table public.abogados add column if not exists cedula text;
+alter table public.abogados add column if not exists especialidad text;
+alter table public.abogados add column if not exists estado text;
+alter table public.abogados add column if not exists ciudad text;
+alter table public.abogados add column if not exists bio text;
+alter table public.abogados add column if not exists verificado boolean default false;
 
 -- 1) Columnas nuevas en consultas -----------------------------------
 --    cliente_id / abogado_id: de quién es cada consulta
