@@ -40,7 +40,9 @@ const S = {
 }
 
 const ESPECIALIDADES = ['Derecho Civil','Derecho Migratorio','Derecho Familiar','Derecho Penal','Derecho Inmobiliario','Derecho Mercantil','Derecho Fiscal','Seguridad Social','Derecho Administrativo','Derecho Agrario']
-const HOY = new Date().toISOString().split('T')[0]
+// Fecha de hoy en el Centro de México (YYYY-MM-DD)
+const HOY = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City' }).format(new Date())
+const MANANA = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City' }).format(new Date(Date.now() + 864e5))
 
 function Badge({ status, t }) {
   const map = {
@@ -62,16 +64,30 @@ export default function Dashboard() {
   const [page, setPage] = useState('home')
   const [data, setData] = useState({ casos:[], consultas:[], profile:null })
   const [loading, setLoading] = useState(true)
-  const [agForm, setAgForm] = useState({ esp:'Derecho Civil', fecha:HOY, hora:'10:00 AM', desc:'' })
-  const [agSuccess, setAgSuccess] = useState(null)
+  const [agForm, setAgForm] = useState({ esp:'Derecho Civil', fecha:MANANA, hora:'10:00 AM', desc:'' })
+  const [agError, setAgError] = useState('')
+  const [aviso, setAviso] = useState(null) // 'ok' | 'cancelado'
   const [agLoading, setAgLoading] = useState(false)
   const [savingProfile, setSavingProfile] = useState(false)
   const [profileForm, setProfileForm] = useState({ nombre:'', apellido:'', telefono:'', pais:'', ciudad:'' })
 
-  useEffect(() => { loadAll() }, [])
+  useEffect(() => {
+    loadAll()
+    // Regreso desde Stripe
+    const pago = new URLSearchParams(window.location.search).get('pago')
+    if (pago === 'ok' || pago === 'cancelado') {
+      setAviso(pago)
+      window.history.replaceState({}, '', '/dashboard')
+      if (pago === 'ok') {
+        // El aviso de Stripe tarda unos segundos: recargamos un par de veces
+        setTimeout(() => loadAll(true), 4000)
+        setTimeout(() => loadAll(true), 12000)
+      }
+    }
+  }, [])
 
-  async function loadAll() {
-    setLoading(true)
+  async function loadAll(silencioso = false) {
+    if (!silencioso) setLoading(true)
     const [casosRes, consultasRes, profileRes] = await Promise.all([
       supabase.from('casos').select('*').eq('cliente_id', user.id).order('created_at', { ascending: false }),
       supabase.from('consultas').select('*').eq('cliente_id', user.id).order('fecha', { ascending: false }),
@@ -84,17 +100,25 @@ export default function Dashboard() {
   }
 
   async function agendar() {
-  if (!agForm.fecha) { alert('Por favor selecciona una fecha.'); return }
-  
-  const rid = 'am-' + Math.random().toString(36).slice(2,10)
-  sessionStorage.setItem('pendingConsulta', JSON.stringify({
-    esp: agForm.esp, fecha: agForm.fecha, hora: agForm.hora,
-    desc: agForm.desc || agForm.esp, userId: user.id,
-    rid: rid, ts: Date.now()
-  }))
-  
-  window.location.href = 'https://buy.stripe.com/7sY14n5d9dKG6ST1dR8EM01'
-}
+    setAgError('')
+    if (!agForm.fecha) { setAgError(lang==='es' ? 'Selecciona una fecha.' : 'Choose a date.'); return }
+    setAgLoading(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const r = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (session?.access_token || '') },
+        body: JSON.stringify({ especialidad: agForm.esp, fecha: agForm.fecha, hora: agForm.hora, descripcion: agForm.desc }),
+      })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok || !j.url) throw new Error(j.error || 'No pudimos iniciar el pago.')
+      window.location.href = j.url
+    } catch (e) {
+      setAgError(e.message)
+      setAgLoading(false)
+    }
+  }
+
   async function saveProfile() {
     setSavingProfile(true)
     const { error } = await supabase.from('usuarios').update(profileForm).eq('id', user.id)
@@ -148,7 +172,7 @@ export default function Dashboard() {
             ['perfil','👤',lang==='es'?'Mi perfil':'My profile'],
           ].map(([id, ico, label]) => (
             <button key={id} style={{ ...S.sbItem, ...(page===id?S.sbItemActive:{}) }}
-              onClick={() => { setPage(id); if(id==='agendar') setAgSuccess(null) }}
+              onClick={() => { setPage(id) }}
               onMouseEnter={e => { if(page!==id) e.currentTarget.style.background='#ebebf0' }}
               onMouseLeave={e => { if(page!==id) e.currentTarget.style.background='none' }}>
               <span style={{ fontSize:'1rem', width:20, textAlign:'center' }}>{ico}</span>
@@ -159,6 +183,19 @@ export default function Dashboard() {
 
         {/* MAIN */}
         <main style={S.main}>
+          {aviso === 'ok' && (
+            <div role="status" style={{ background:'#e8f5e9', border:'1px solid #a5d6a7', color:'#1b5e20', borderRadius:12, padding:'16px 20px', display:'flex', justifyContent:'space-between', gap:12, alignItems:'flex-start' }}>
+              <div><strong>{lang==='es' ? '¡Pago recibido! Tu consulta está confirmada.' : 'Payment received! Your consultation is confirmed.'}</strong><br/>
+                <span style={{ fontSize:'.88rem' }}>{lang==='es' ? 'En unos minutos te llegará a tu correo la invitación con el enlace de Google Meet. También aparecerá en "Mis citas".' : 'In a few minutes you will get an email invitation with the Google Meet link. It will also appear under "My appointments".'}</span></div>
+              <button onClick={() => setAviso(null)} aria-label="Cerrar" style={{ background:'none', fontSize:'1.2rem', color:'#1b5e20' }}>×</button>
+            </div>
+          )}
+          {aviso === 'cancelado' && (
+            <div role="status" style={{ background:'#fff8e1', border:'1px solid #ffe082', color:'#7a4f01', borderRadius:12, padding:'16px 20px', display:'flex', justifyContent:'space-between', gap:12 }}>
+              <span>{lang==='es' ? 'No se realizó ningún cargo. Puedes agendar de nuevo cuando quieras.' : 'You were not charged. You can book again anytime.'}</span>
+              <button onClick={() => setAviso(null)} aria-label="Cerrar" style={{ background:'none', fontSize:'1.2rem', color:'#7a4f01' }}>×</button>
+            </div>
+          )}
           {loading ? (
             <div style={S.loader}><div style={{ width:20, height:20, border:'2px solid #e0e0e0', borderTopColor:'var(--dorado)', borderRadius:'50%', animation:'spin .7s linear infinite' }}/> Cargando...</div>
           ) : (
@@ -170,7 +207,7 @@ export default function Dashboard() {
                     <div style={{ fontFamily:'var(--display)', fontSize:'1.3rem', fontWeight:700, color:'#fff', marginBottom:4 }}>{t.welcome}, {nombre} 👋</div>
                     <div style={{ color:'rgba(185,206,237,.75)', fontSize:'.88rem' }}>{t.welcomeSub}</div>
                   </div>
-                  <button onClick={() => { setPage('agendar'); setAgSuccess(null) }} style={{ ...S.btn, background:'var(--grad-acento)', color:'var(--sobre-acento)', boxShadow:'0 4px 14px rgba(var(--acento-rgb),.3)' }}>{t.newConsult}</button>
+                  <button onClick={() => { setPage('agendar') }} style={{ ...S.btn, background:'var(--grad-acento)', color:'var(--sobre-acento)', boxShadow:'0 4px 14px rgba(var(--acento-rgb),.3)' }}>{t.newConsult}</button>
                 </div>
                 <div className="dash-stats" style={S.statsRow}>
                   {[[activos.length, t.activeCases,'#B9CEED'],[cerrados.length,t.closedCases,'#27ae60'],[data.consultas.length,t.totalConsults,'var(--acento)'],['$'+totalPagado.toFixed(2),t.totalPaid,'#e74c3c']].map(([n,l,c]) => (
@@ -202,7 +239,7 @@ export default function Dashboard() {
                     <div style={S.empty}>
                       <div style={{ fontSize:'2.5rem', marginBottom:10 }}>📅</div>
                       <p style={{ marginBottom:14 }}>{t.noUpcoming}</p>
-                      <button onClick={() => { setPage('agendar'); setAgSuccess(null) }} style={{ ...S.btn, background:'var(--grad-acento)', color:'var(--sobre-acento)' }}>{t.bookFirst}</button>
+                      <button onClick={() => { setPage('agendar') }} style={{ ...S.btn, background:'var(--grad-acento)', color:'var(--sobre-acento)' }}>{t.bookFirst}</button>
                     </div>
                   ) : (
                     <div style={{ overflowX:'auto' }}>
@@ -221,22 +258,7 @@ export default function Dashboard() {
               {/* AGENDAR */}
               {page==='agendar' && (
                 <div style={S.card}>
-                  {agSuccess ? (
-                    <div style={{ textAlign:'center', padding:'16px 0' }}>
-                      <div style={{ fontSize:'3rem', marginBottom:14 }}>✅</div>
-                      <h3 style={{ fontFamily:'var(--display)', color:'var(--azul)', marginBottom:8 }}>{t.consultBooked}</h3>
-                      <p style={{ color:'#666', marginBottom:6 }}>{t.bookedMsg} <strong>{agSuccess.esp}</strong></p>
-                      <p style={{ color:'#666', marginBottom:16 }}><strong>{agSuccess.fecha}</strong> {t.at} <strong>{agSuccess.hora}</strong></p>
-                      <p style={{ color:'#888', marginBottom:8 }}>{t.yourRoom}</p>
-                      <a href={'https://meet.jit.si/'+agSuccess.rid} target="_blank" rel="noreferrer" style={{ display:'inline-block', background:'#eef3ff', border:'1px solid var(--celeste)', color:'var(--azul)', fontSize:'.76rem', fontFamily:'monospace', padding:'8px 16px', borderRadius:8, margin:'0 0 20px' }}>meet.jit.si/{agSuccess.rid}</a>
-                      <div style={{ display:'flex', gap:10, justifyContent:'center', flexWrap:'wrap' }}>
-                        <a href={'https://meet.jit.si/'+agSuccess.rid} target="_blank" rel="noreferrer" style={{ ...S.btn, background:'var(--grad-acento)', color:'var(--sobre-acento)' }}>{t.joinRoom}</a>
-                        <button onClick={() => setAgSuccess(null)} style={{ ...S.btn, background:'transparent', color:'var(--azul)', border:'1.5px solid rgba(0,24,61,.2)' }}>{t.newBooking}</button>
-                        <button onClick={() => setPage('home')} style={{ ...S.btn, background:'transparent', color:'var(--azul)', border:'1.5px solid rgba(0,24,61,.2)' }}>{t.goHome}</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
+                  <>
                       <div style={S.cardTitle}>{t.agendarTitle}</div>
                       <p style={{ color:'#777', fontSize:'.88rem', marginBottom:20 }}>{t.agendarDesc}</p>
                       <div className="dash-fgrid" style={S.fgrid}>
@@ -249,7 +271,7 @@ export default function Dashboard() {
                           <input style={S.input} type="date" min={HOY} value={agForm.fecha} onChange={e => setAgForm(f=>({...f,fecha:e.target.value}))}/>
                         </div>
                         <div style={S.fg}>
-                          <label style={S.label}>{t.time}</label>
+                          <label style={S.label}>{t.time} {lang==='es' ? '(hora del Centro de México)' : '(Mexico City time)'}</label>
                           <select style={S.select} value={agForm.hora} onChange={e => setAgForm(f=>({...f,hora:e.target.value}))}>
                             {['09:00 AM','10:00 AM','11:00 AM','12:00 PM','02:00 PM','03:00 PM','04:00 PM','05:00 PM'].map(h=><option key={h}>{h}</option>)}
                           </select>
@@ -268,9 +290,9 @@ export default function Dashboard() {
                           {agLoading ? t.processing : t.payConfirm}
                         </button>
                       </div>
-                      <p style={{ fontSize:'.72rem', color:'#ccc', textAlign:'center', marginTop:10 }}>🔒 Pago seguro via Stripe · PCI DSS</p>
-                    </>
-                  )}
+                      {agError && <p role="alert" style={{ marginTop:12, padding:'10px 14px', background:'#fdecea', color:'#b3261e', borderRadius:8, fontSize:'.85rem' }}>{agError}</p>}
+                      <p style={{ fontSize:'.75rem', color:'#888', textAlign:'center', marginTop:10 }}>🔒 {lang==='es' ? 'Pago seguro con Stripe. Al confirmarse, te llega por correo la invitación con el enlace de Google Meet.' : 'Secure payment with Stripe. Once confirmed, you get an email invitation with the Google Meet link.'}</p>
+                  </>
                 </div>
               )}
 
@@ -282,7 +304,7 @@ export default function Dashboard() {
                     <div style={S.empty}>
                       <div style={{ fontSize:'2.5rem', marginBottom:10 }}>📁</div>
                       <p style={{ marginBottom:14 }}>{t.noCases}</p>
-                      <button onClick={() => { setPage('agendar'); setAgSuccess(null) }} style={{ ...S.btn, background:'var(--grad-acento)', color:'var(--sobre-acento)' }}>{t.bookConsult}</button>
+                      <button onClick={() => { setPage('agendar') }} style={{ ...S.btn, background:'var(--grad-acento)', color:'var(--sobre-acento)' }}>{t.bookConsult}</button>
                     </div>
                   ) : (
                     <div style={{ overflowX:'auto' }}>
@@ -312,7 +334,7 @@ export default function Dashboard() {
                     <div style={S.empty}>
                       <div style={{ fontSize:'2.5rem', marginBottom:10 }}>📅</div>
                       <p style={{ marginBottom:14 }}>{t.noUpcoming}</p>
-                      <button onClick={() => { setPage('agendar'); setAgSuccess(null) }} style={{ ...S.btn, background:'var(--grad-acento)', color:'var(--sobre-acento)' }}>{t.bookConsult}</button>
+                      <button onClick={() => { setPage('agendar') }} style={{ ...S.btn, background:'var(--grad-acento)', color:'var(--sobre-acento)' }}>{t.bookConsult}</button>
                     </div>
                   ) : (
                     <div style={{ overflowX:'auto' }}>
