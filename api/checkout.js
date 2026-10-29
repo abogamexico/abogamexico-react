@@ -50,7 +50,15 @@ export default async function handler(req, res) {
         },
       },
     }
-    if (process.env.STRIPE_TAX_RATE_ID) lineItem.tax_rates = [process.env.STRIPE_TAX_RATE_ID]
+    // Impuestos: automáticos con Stripe Tax (STRIPE_AUTOMATIC_TAX=true)
+    // o una tasa fija (STRIPE_TAX_RATE_ID=txr_...). Si no hay ninguna, no se suman.
+    const impuestoAuto = process.env.STRIPE_AUTOMATIC_TAX === 'true'
+    if (impuestoAuto) {
+      lineItem.price_data.tax_behavior = 'exclusive' // el impuesto se suma a los $49.99
+      lineItem.price_data.product_data.tax_code = process.env.STRIPE_TAX_CODE || 'txcd_20060054' // Legal Services
+    } else if (process.env.STRIPE_TAX_RATE_ID) {
+      lineItem.tax_rates = [process.env.STRIPE_TAX_RATE_ID]
+    }
 
     const session = await stripe('checkout/sessions', {
       mode: 'payment',
@@ -58,6 +66,8 @@ export default async function handler(req, res) {
       customer_email: user.email,
       client_reference_id: user.id,
       line_items: [lineItem],
+      automatic_tax: impuestoAuto ? { enabled: true } : undefined,
+      billing_address_collection: impuestoAuto ? 'required' : undefined, // Stripe necesita el domicilio para calcularlo
       metadata: meta,
       payment_intent_data: { metadata: meta, description: `AbogaMéxico · ${especialidad} · ${fecha} ${hora}` },
       success_url: siteUrl() + '/dashboard?pago=ok&session_id={CHECKOUT_SESSION_ID}',

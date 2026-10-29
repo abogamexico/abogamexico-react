@@ -5,6 +5,7 @@ import Landing from './pages/Landing'
 import Dashboard from './pages/Dashboard'
 import DashboardAbogado from './pages/DashboardAbogado'
 import { Privacidad, Terminos } from './pages/Legal'
+import Restablecer from './pages/Restablecer'
 
 function PrivateRoute({ children, requiredTipo }) {
   const { user, loading } = useAuth()
@@ -26,6 +27,7 @@ function AppRoutes() {
       } />
       <Route path="/privacidad" element={<Privacidad />} />
       <Route path="/terminos" element={<Terminos />} />
+      <Route path="/restablecer" element={<Restablecer />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

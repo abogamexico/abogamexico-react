@@ -22,7 +22,7 @@ const S = {
   row: { display:'grid',gridTemplateColumns:'1fr 1fr',gap:12 },
   btn: { width:'100%',marginTop:6,padding:'13px',borderRadius:10,border:'none',fontFamily:'var(--sans)',fontSize:'.95rem',fontWeight:700,cursor:'pointer',background:'var(--grad-acento)',color:'var(--sobre-acento)',boxShadow:'0 6px 20px rgba(var(--acento-rgb),.3)',transition:'all .2s' },
   note: { fontSize:'.78rem',color:'#999',textAlign:'center',marginTop:12 },
-  noteLink: { color:'var(--dorado)',cursor:'pointer',fontWeight:600 },
+  noteLink: { color:'var(--azul)',cursor:'pointer',fontWeight:600,textDecoration:'underline' },
   err: { color:'#dc2626',fontSize:'.76rem',marginTop:4 },
   ok: { color:'#16a34a',fontSize:'.76rem',marginTop:4 },
   select: { width:'100%',padding:'11px 13px',border:'1.5px solid #e0e4ea',borderRadius:9,fontFamily:'var(--sans)',fontSize:'.9rem',color:'#111',outline:'none',background:'#fff' },
@@ -37,7 +37,8 @@ const ESPECIALIDADES = ['Derecho Civil','Derecho Migratorio','Derecho Familiar',
 
 export default function AuthModal({ type, onClose, onSwitch }) {
   const { t } = useLang()
-  const { signIn, signUp } = useAuth()
+  const { signIn, signUp, resetPassword } = useAuth()
+  const [resetMsg, setResetMsg] = useState('')
   const navigate = useNavigate()
   const [tab, setTab] = useState('client') // 'client' | 'lawyer'
   const [loading, setLoading] = useState(false)
@@ -61,6 +62,15 @@ export default function AuthModal({ type, onClose, onSwitch }) {
     if (clean.length >= 6 && clean.length <= 8) { setCedOk(t.cedValid); setCedErr('') }
     else if (clean.length > 0) { setCedErr(t.cedError); setCedOk('') }
     else { setCedErr(''); setCedOk('') }
+  }
+
+  async function handleForgot() {
+    setError(''); setResetMsg('')
+    if (!form.email) { setError('Escribe tu correo y vuelve a presionar "¿Olvidaste tu contraseña?".'); return }
+    try {
+      await resetPassword(form.email)
+      setResetMsg('Te enviamos un correo para crear una contraseña nueva. Revisa también tu carpeta de spam.')
+    } catch (e) { setError(e.message) }
   }
 
   async function handleLogin() {
@@ -146,6 +156,8 @@ export default function AuthModal({ type, onClose, onSwitch }) {
               <button style={{...S.btn, opacity: loading?.8:1}} onClick={handleLogin} disabled={loading}>
                 {loading ? 'Verificando...' : (tab==='lawyer' ? t.enterPanel : t.enterBtn)}
               </button>
+              <p style={{...S.note, marginTop:10}}><button type="button" onClick={handleForgot} style={{...S.noteLink, background:'none', padding:0, font:'inherit', cursor:'pointer'}}>{t.forgotPass}</button></p>
+              {resetMsg && <p role="status" style={{ marginTop:8, padding:'10px 12px', background:'#e8f5e9', color:'#1b5e20', borderRadius:8, fontSize:'.85rem' }}>{resetMsg}</p>}
               <p style={S.note}>{t.noAccount} <span style={S.noteLink} onClick={() => onSwitch('register')}>{t.registerFree}</span></p>
             </>
           ) : (

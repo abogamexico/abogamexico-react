@@ -41,10 +41,15 @@ export function AuthProvider({ children }) {
 
   async function signUp(email, password, metadata) {
     const { data, error } = await supabase.auth.signUp({
-      email, password, options: { data: metadata }
+      email, password, options: { data: metadata, emailRedirectTo: window.location.origin + '/' }
     })
     if (error) throw error
     return data
+  }
+
+  async function resetPassword(email) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/restablecer' })
+    if (error) throw error
   }
 
   async function signOut() {
@@ -52,7 +57,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, signIn, signUp, signOut, resetPassword }}>
       {children}
     </AuthContext.Provider>
   )

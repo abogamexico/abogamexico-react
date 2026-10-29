@@ -37,10 +37,27 @@ export default function Landing() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  // Si llegamos desde otra página con /#seccion, bajar a esa sección
+  const [authAviso, setAuthAviso] = useState(null)
+
+  // Si llegamos desde otra página con /#seccion, bajar a esa sección.
+  // Si llegamos desde un enlace de correo de Supabase, avisar el resultado.
   useEffect(() => {
-    const id = window.location.hash.replace('#', '')
-    if (id) setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }), 200)
+    const hash = window.location.hash.slice(1)
+    if (!hash) return
+    const q = new URLSearchParams(hash)
+    if (q.get('error_code')) {
+      setAuthAviso(q.get('error_code') === 'otp_expired'
+        ? 'El enlace de confirmación ya expiró o ya se usó. Si ya confirmaste, solo inicia sesión; si no, regístrate de nuevo para recibir otro.'
+        : 'No pudimos confirmar tu correo. Intenta de nuevo o escríbenos a ' + CONTACT_EMAIL + '.')
+      window.history.replaceState({}, '', '/')
+      return
+    }
+    if (q.get('access_token')) {
+      setAuthAviso(q.get('type') === 'signup' ? '¡Correo confirmado! Ya tienes tu sesión iniciada.' : null)
+      window.history.replaceState({}, '', '/')
+      return
+    }
+    setTimeout(() => document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' }), 200)
   }, [])
 
   function openConsult() {
@@ -51,6 +68,12 @@ export default function Landing() {
   return (
     <div style={{ fontFamily: 'var(--sans)' }}>
       <Navbar scrolled={scrolled} />
+      {authAviso && (
+        <div role="status" style={{ position:'fixed', top:84, left:16, right:16, zIndex:950, maxWidth:620, margin:'0 auto', background:'#fff', color:'var(--azul)', borderRadius:12, padding:'14px 18px', boxShadow:'0 12px 40px rgba(0,0,0,.3)', display:'flex', gap:12, alignItems:'flex-start', justifyContent:'space-between' }}>
+          <span style={{ fontSize:'.92rem' }}>{authAviso}</span>
+          <button onClick={() => setAuthAviso(null)} aria-label="Cerrar" style={{ background:'none', fontSize:'1.3rem', color:'var(--azul)', lineHeight:1 }}>×</button>
+        </div>
+      )}
 
       {/* ── HERO ── */}
       <section id="hero" style={{ position:'relative', minHeight:'100vh', display:'flex', alignItems:'center', overflow:'hidden', paddingTop:80, background:'var(--azul)' }}>
