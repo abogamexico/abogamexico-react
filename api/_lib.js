@@ -196,8 +196,7 @@ export function htmlConfirmacion({ nombre, especialidad, fecha, hora, abogado, m
        <p style="font-size:13px;color:#5a6782;margin:0 0 8px">O copia este enlace: <a href="${esc(meetLink)}" style="color:#00183D">${esc(meetLink)}</a></p>`
     : `<p style="background:#fff8e1;border-radius:8px;padding:12px 16px;color:#7a4f01">Te enviaremos el enlace de la videollamada en un correo aparte antes de tu cita.</p>`
   return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#1c2a44">
-  <h2 style="color:#00183D;margin:0 0 4px">Aboga<span style="color:#B8912A">México</span></h2>
-  <p style="color:#5a6782;margin:0 0 28px;font-size:13px">Consultorio Jurídico Virtual</p>
+  <img src="https://www.abogamexico.com/logo-correo.png" width="232" height="60" alt="AbogaMéxico · Consultorio Jurídico Virtual" style="display:block;border:0;margin:0 0 28px">
   <h3 style="color:#00183D;margin:0 0 12px">${paraAbogado ? 'Tienes una nueva consulta asignada' : '¡Tu consulta está confirmada!'}</h3>
   <p style="line-height:1.6">Hola ${esc(nombre)}, ${paraAbogado ? 'un cliente agendó y pagó una consulta contigo.' : 'recibimos tu pago. Estos son los datos de tu consulta:'}</p>
   <table style="border-collapse:collapse;margin:16px 0;font-size:15px">
