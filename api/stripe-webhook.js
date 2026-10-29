@@ -1,7 +1,7 @@
 // POST /api/stripe-webhook
 // Stripe nos avisa aquí cuando un pago se completa. Entonces:
 //   1) guardamos la consulta como pagada (una sola vez, aunque Stripe reintente)
-//   2) asignamos un abogado verificado de esa especialidad, si hay
+//   2) asignamos un abogado verificado que atienda esa especialidad, si hay
 //   3) creamos el evento de Google Calendar con enlace de Meet e invitamos
 //      al cliente y al abogado por correo
 
@@ -39,8 +39,10 @@ export default async function handler(req, res) {
     if (!consulta) {
       // 2) Elegir abogado: verificado y de la misma especialidad, el que tenga menos consultas
       let abogado = null
-      const { data: abogados } = await sb.from('abogados')
-        .select('id, email, nombre, apellido').eq('verificado', true).eq('especialidad', m.especialidad)
+      // (acepta abogados con varias especialidades o con la columna vieja de una sola)
+      const { data: verificados } = await sb.from('abogados').select('*').eq('verificado', true)
+      const abogados = (verificados || []).filter(a =>
+        (Array.isArray(a.especialidades) && a.especialidades.includes(m.especialidad)) || a.especialidad === m.especialidad)
       if (abogados?.length) {
         const cargas = await Promise.all(abogados.map(async a => {
           const { count } = await sb.from('consultas').select('id', { count: 'exact', head: true }).eq('abogado_id', a.id)
