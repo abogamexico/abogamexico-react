@@ -8,6 +8,7 @@
 import {
   supabaseAdmin, verificarFirmaStripe, leerCuerpoCrudo,
   googleConfigurado, crearEventoMeet, inicioYFin,
+  resendConfigurado, enviarCorreo, htmlConfirmacion,
 } from './_lib.js'
 
 export const config = { api: { bodyParser: false } }
@@ -115,6 +116,40 @@ export default async function handler(req, res) {
     } catch (e) {
       // El pago ya quedó guardado; el enlace se puede crear a mano si falla Google
       console.error('webhook: no se pudo crear el Meet', e)
+    }
+  }
+
+  // 4) Correo de confirmación con el enlace de Meet (una sola vez)
+  if (resendConfigurado()) {
+    try {
+      const { data: c } = await sb.from('consultas').select('*').eq('id', consulta.id).maybeSingle()
+      if (c && !c.confirmacion_enviada) {
+        const { data: cliente } = await sb.from('usuarios').select('nombre, apellido, email').eq('id', c.cliente_id).maybeSingle()
+        const { data: abogado } = c.abogado_id
+          ? await sb.from('abogados').select('nombre, apellido, email').eq('id', c.abogado_id).maybeSingle()
+          : { data: null }
+        const nombreCliente = [cliente?.nombre, cliente?.apellido].filter(Boolean).join(' ') || s.customer_details?.name || ''
+        const nombreAbogado = abogado ? [abogado.nombre, abogado.apellido].filter(Boolean).join(' ') : null
+        const datos = { especialidad: c.especialidad, fecha: c.fecha, hora: c.hora, meetLink: c.meet_link, descripcion: c.descripcion }
+        const correoCliente = s.customer_details?.email || s.customer_email || cliente?.email
+
+        await enviarCorreo({
+          para: correoCliente,
+          copiaOculta: 'abogamexicoconsultoria@gmail.com',
+          asunto: `Consulta confirmada · ${c.especialidad} · ${c.fecha} ${c.hora}`,
+          html: htmlConfirmacion({ ...datos, nombre: nombreCliente || 'cliente', abogado: nombreAbogado }),
+        })
+        if (abogado?.email) {
+          await enviarCorreo({
+            para: abogado.email,
+            asunto: `Nueva consulta asignada · ${c.especialidad} · ${c.fecha} ${c.hora}`,
+            html: htmlConfirmacion({ ...datos, nombre: 'Lic. ' + (abogado.nombre || ''), paraAbogado: true, cliente: nombreCliente || 'Cliente' }),
+          })
+        }
+        await sb.from('consultas').update({ confirmacion_enviada: true }).eq('id', c.id)
+      }
+    } catch (e) {
+      console.error('webhook: no se pudo enviar el correo de confirmación', e)
     }
   }
 
