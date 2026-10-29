@@ -12,6 +12,7 @@
 //   GOOGLE_CLIENT_ID            ┐
 //   GOOGLE_CLIENT_SECRET        ├ (opcionales) para crear Google Meet automáticamente
 //   GOOGLE_REFRESH_TOKEN        ┘
+//   RESEND_API_KEY              (opcional) correo de confirmación con el enlace de Meet
 
 import crypto from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
@@ -154,4 +155,64 @@ export async function crearEventoMeet({ id, titulo, descripcion, inicio, fin, in
   if (!res.ok) throw new Error('Google Calendar: ' + (json.error?.message || res.status))
   const meet = json.hangoutLink || json.conferenceData?.entryPoints?.find(e => e.entryPointType === 'video')?.uri
   return { eventId: json.id, meetLink: meet || null }
+}
+
+// ── Correo con Resend ───────────────────────────────────────────────
+//   RESEND_API_KEY   llave re_... con permiso de envío (Vercel)
+export function resendConfigurado() { return !!process.env.RESEND_API_KEY }
+
+export async function enviarCorreo({ para, asunto, html, copiaOculta }) {
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: 'AbogaMéxico <no-responder@abogamexico.com>',
+      reply_to: 'abogamexicoconsultoria@gmail.com',
+      to: [].concat(para).filter(Boolean),
+      bcc: copiaOculta ? [].concat(copiaOculta) : undefined,
+      subject: asunto,
+      html,
+    }),
+  })
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error('Resend: ' + (json.message || res.status))
+  return json.id
+}
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+
+// "2030-01-15" → "martes 15 de enero de 2030"
+export function fechaLarga(fecha) {
+  const [Y, M, D] = String(fecha).split('-').map(Number)
+  if (!Y) return fecha
+  return new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+    .format(new Date(Date.UTC(Y, M - 1, D)))
+}
+
+export function htmlConfirmacion({ nombre, especialidad, fecha, hora, abogado, meetLink, paraAbogado = false, cliente, descripcion }) {
+  const fila = (k, v) => `<tr><td style="padding:8px 0;color:#5a6782;width:130px;vertical-align:top">${k}</td><td style="padding:8px 0;color:#00183D;font-weight:bold">${v}</td></tr>`
+  const boton = meetLink
+    ? `<p style="margin:28px 0"><a href="${esc(meetLink)}" style="background:#D4AF37;color:#00183D;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">Entrar a la videollamada</a></p>
+       <p style="font-size:13px;color:#5a6782;margin:0 0 8px">O copia este enlace: <a href="${esc(meetLink)}" style="color:#00183D">${esc(meetLink)}</a></p>`
+    : `<p style="background:#fff8e1;border-radius:8px;padding:12px 16px;color:#7a4f01">Te enviaremos el enlace de la videollamada en un correo aparte antes de tu cita.</p>`
+  return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#1c2a44">
+  <h2 style="color:#00183D;margin:0 0 4px">Aboga<span style="color:#B8912A">México</span></h2>
+  <p style="color:#5a6782;margin:0 0 28px;font-size:13px">Consultorio Jurídico Virtual</p>
+  <h3 style="color:#00183D;margin:0 0 12px">${paraAbogado ? 'Tienes una nueva consulta asignada' : '¡Tu consulta está confirmada!'}</h3>
+  <p style="line-height:1.6">Hola ${esc(nombre)}, ${paraAbogado ? 'un cliente agendó y pagó una consulta contigo.' : 'recibimos tu pago. Estos son los datos de tu consulta:'}</p>
+  <table style="border-collapse:collapse;margin:16px 0;font-size:15px">
+    ${fila('Especialidad', esc(especialidad))}
+    ${fila('Fecha', esc(fechaLarga(fecha)))}
+    ${fila('Hora', esc(hora) + ' <span style="font-weight:normal;color:#5a6782">(hora del Centro de México)</span>')}
+    ${fila('Duración', 'Hasta 60 minutos')}
+    ${paraAbogado ? fila('Cliente', esc(cliente)) : fila('Abogado', abogado ? 'Lic. ' + esc(abogado) : 'Te lo confirmamos pronto')}
+    ${paraAbogado && descripcion ? fila('Asunto', esc(descripcion)) : ''}
+  </table>
+  ${boton}
+  <p style="line-height:1.6;font-size:14px;margin-top:24px">${paraAbogado
+    ? 'La invitación también está en tu Google Calendar.'
+    : 'Entra desde tu celular o computadora unos minutos antes. No necesitas instalar nada. Si necesitas cambiar el horario, responde a este correo con al menos 24 horas de anticipación.'}</p>
+  <hr style="border:none;border-top:1px solid #e3e8f0;margin:28px 0 16px">
+  <p style="font-size:12px;color:#8a94a8">AbogaMéxico · abogamexicoconsultoria@gmail.com · www.abogamexico.com</p>
+</div>`
 }
