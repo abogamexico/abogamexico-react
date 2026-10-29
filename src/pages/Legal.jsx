@@ -57,7 +57,7 @@ export function Privacidad() {
       <h2>4. Con quién compartimos tus datos</h2>
       <ul>
         <li><strong>El abogado asignado a tu consulta</strong>, que es un profesional independiente, para que pueda darte la asesoría que contrataste.</li>
-        <li><strong>Proveedores que nos ayudan a operar la plataforma</strong> y tratan los datos solo por nuestra cuenta: Stripe (procesamiento de pagos), Supabase (base de datos y cuentas de usuario), Vercel (alojamiento del sitio) y Google (calendario, videollamadas por Google Meet y correo). Algunos de estos proveedores almacenan información en servidores fuera de México, principalmente en Estados Unidos.</li>
+        <li><strong>Proveedores que nos ayudan a operar la plataforma</strong> y tratan los datos solo por nuestra cuenta: Stripe (procesamiento de pagos), Supabase (base de datos y cuentas de usuario), Vercel (alojamiento del sitio), Resend (envío de correos de confirmación) y Google (calendario y videollamadas por Google Meet). Algunos de estos proveedores almacenan información en servidores fuera de México, principalmente en Estados Unidos.</li>
         <li><strong>Autoridades</strong>, únicamente cuando una ley o una orden judicial nos obligue.</li>
       </ul>
       <p>No vendemos ni rentamos tus datos personales.</p>
