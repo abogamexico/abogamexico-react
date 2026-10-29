@@ -4,7 +4,9 @@
 // Variables de entorno (Vercel → Settings → Environment Variables):
 //   STRIPE_SECRET_KEY           llave secreta de Stripe (sk_test_... o sk_live_...)
 //   STRIPE_WEBHOOK_SECRET       secreto del webhook (whsec_...)
-//   STRIPE_TAX_RATE_ID          (opcional) txr_... para cobrar impuestos aparte
+//   STRIPE_AUTOMATIC_TAX        (opcional) "true" para que Stripe Tax calcule el impuesto
+//   STRIPE_TAX_CODE             (opcional) código fiscal del servicio; por defecto txcd_20060054 (Legal Services)
+//   STRIPE_TAX_RATE_ID          (opcional) txr_... tasa fija, si no se usa Stripe Tax
 //   SUPABASE_SERVICE_ROLE_KEY   llave secreta de Supabase (service_role / sb_secret_...)
 //   SITE_URL                    https://www.abogamexico.com
 //   GOOGLE_CLIENT_ID            ┐
