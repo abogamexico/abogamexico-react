@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
 import { supabase } from '../lib/supabase'
 import { LogoMark } from '../components/Logo'
+import EspecialidadesPicker, { especialidadesDe } from '../components/EspecialidadesPicker'
 
 // Enlace de la videollamada: Google Meet si existe; si no, la sala anterior de Jitsi
 const salaUrl = c => c.meet_link || (c.jitsi_room ? 'https://meet.jit.si/' + c.jitsi_room : null)
@@ -43,6 +44,9 @@ export default function DashboardAbogado() {
   const [loading, setLoading] = useState(true)
   const [resultModal, setResultModal] = useState(null)
   const [resultText, setResultText] = useState('')
+  const [espEdit, setEspEdit] = useState([])
+  const [espMsg, setEspMsg] = useState(null)
+  const [espGuardando, setEspGuardando] = useState(false)
 
   const nombre = user?.user_metadata?.nombre || user?.email?.split('@')[0] || ''
 
@@ -60,6 +64,7 @@ export default function DashboardAbogado() {
     setCasos(casosData)
     setConsultas(consultasRes.data || [])
     setProfile(profileRes.data || {})
+    setEspEdit(especialidadesDe(profileRes.data))
     setLoading(false)
   }
 
@@ -73,6 +78,17 @@ export default function DashboardAbogado() {
     setResultModal(null)
     setResultText('')
     loadAll()
+  }
+
+  async function guardarEspecialidades() {
+    setEspMsg(null)
+    if (espEdit.length === 0) return setEspMsg({ ok: false, t: lang==='es' ? 'Elige al menos una especialidad.' : 'Choose at least one specialty.' })
+    setEspGuardando(true)
+    const { error } = await supabase.from('abogados').update({ especialidades: espEdit, especialidad: espEdit[0] }).eq('id', user.id)
+    setEspGuardando(false)
+    if (error) return setEspMsg({ ok: false, t: (lang==='es' ? 'No se pudo guardar: ' : 'Could not save: ') + error.message })
+    setProfile(p => ({ ...p, especialidades: espEdit, especialidad: espEdit[0] }))
+    setEspMsg({ ok: true, t: lang==='es' ? '✓ Especialidades guardadas. Recibirás consultas de todas ellas.' : '✓ Specialties saved.' })
   }
 
   async function handleSignOut() { await signOut(); navigate('/') }
@@ -137,7 +153,7 @@ export default function DashboardAbogado() {
                       {lang==='es'?'Bienvenido,':'Welcome,'} Lic. {nombre} ⚖️
                     </div>
                     <div style={{ color:'rgba(185,206,237,.75)', fontSize:'.88rem' }}>
-                      {profile?.especialidad} · {profile?.estado||'México'}{profile?.verificado ? ' · ✓ Verificado' : ' · ⏳ Pendiente verificación'}
+                      {especialidadesDe(profile).join(', ') || '—'} · {profile?.estado||'México'}{profile?.verificado ? ' · ✓ Verificado' : ' · ⏳ Pendiente verificación'}
                     </div>
                   </div>
                   <button onClick={() => setPage('activos')} style={{ background:'var(--grad-acento)', color:'var(--sobre-acento)', border:'none', padding:'10px 22px', borderRadius:9, fontSize:'.9rem', fontWeight:600, cursor:'pointer' }}>
@@ -302,7 +318,6 @@ export default function DashboardAbogado() {
                       ['Email', user.email],
                       [lang==='es'?'Teléfono':'Phone', profile?.telefono||''],
                       [lang==='es'?'Cédula Profesional':'Professional License', profile?.cedula||''],
-                      [lang==='es'?'Especialidad':'Specialty', profile?.especialidad||''],
                       [lang==='es'?'Estado':'State', profile?.estado||''],
                       [lang==='es'?'Ciudad':'City', profile?.ciudad||''],
                     ].map(([label, value]) => (
@@ -311,6 +326,13 @@ export default function DashboardAbogado() {
                         <div style={{ padding:'10px 12px', background:'#f8faff', borderRadius:8, fontSize:'.88rem', color:'#333', border:'1px solid #eaedf2' }}>{value||'—'}</div>
                       </div>
                     ))}
+                  </div>
+                  <div style={{ marginTop:20, padding:18, border:'1px solid #eaedf2', borderRadius:12 }}>
+                    <div style={{ fontSize:'.75rem', fontWeight:600, color:'#888', textTransform:'uppercase', letterSpacing:'.04em', marginBottom:4 }}>{lang==='es'?'Mis especialidades':'My specialties'}</div>
+                    <p style={{ fontSize:'.82rem', color:'#777', marginBottom:12 }}>{lang==='es'?'Recibirás consultas de todas las áreas que marques.':'You will receive consultations for every area you select.'}</p>
+                    <EspecialidadesPicker value={espEdit} onChange={setEspEdit} />
+                    <button onClick={guardarEspecialidades} disabled={espGuardando} style={{ ...S.btn, marginTop:14, background:'var(--azul)', color:'#fff', padding:'10px 18px' }}>{espGuardando ? '…' : (lang==='es'?'Guardar especialidades':'Save specialties')}</button>
+                    {espMsg && <p role="status" style={{ marginTop:10, fontSize:'.85rem', color: espMsg.ok ? '#1b5e20' : '#b3261e' }}>{espMsg.t}</p>}
                   </div>
                   {profile?.bio && (
                     <div style={{ marginTop:14 }}>

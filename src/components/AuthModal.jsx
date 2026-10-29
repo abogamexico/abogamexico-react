@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
+import EspecialidadesPicker from './EspecialidadesPicker'
 import { supabase } from '../lib/supabase'
 
 const S = {
@@ -33,7 +34,6 @@ const S = {
 }
 
 const ESTADOS_MX = ['Ciudad de México','Jalisco','Nuevo León','Puebla','Yucatán','Guanajuato','Veracruz','Chihuahua','Coahuila','Oaxaca','Guerrero','Hidalgo','Michoacán','Sinaloa','Tamaulipas']
-const ESPECIALIDADES = ['Derecho Civil','Derecho Migratorio','Derecho Familiar','Derecho Penal','Derecho Inmobiliario','Derecho Mercantil','Derecho Fiscal','Seguridad Social','Derecho Administrativo','Derecho Agrario']
 
 export default function AuthModal({ type, onClose, onSwitch }) {
   const { t } = useLang()
@@ -50,7 +50,7 @@ export default function AuthModal({ type, onClose, onSwitch }) {
   // Form fields
   const [form, setForm] = useState({
     nombre:'', apellido:'', email:'', password:'', telefono:'',
-    pais:'Estados Unidos', ciudad:'', cedula:'', especialidad:'Derecho Civil',
+    pais:'Estados Unidos', ciudad:'', cedula:'', especialidades:[],
     estado:'', bio:''
   })
 
@@ -103,12 +103,13 @@ export default function AuthModal({ type, onClose, onSwitch }) {
   async function handleRegisterLawyer() {
     if (!form.cedula || form.cedula.length < 6) { setCedErr(t.cedError); return }
     if (!form.nombre || !form.email || !form.password) { setError('Completa nombre, correo y contraseña.'); return }
+    if (form.especialidades.length === 0) { setError('Elige al menos una especialidad.'); return }
     if (form.password.length < 8) { setError('La contraseña debe tener al menos 8 caracteres.'); return }
     setError(''); setLoading(true)
     try {
-      const { user } = await signUp(form.email, form.password, { nombre: form.nombre, apellido: form.apellido, tipo: 'abogado', cedula: form.cedula, telefono: form.telefono, especialidad: form.especialidad, estado: form.estado, ciudad: form.ciudad, bio: form.bio })
+      const { user } = await signUp(form.email, form.password, { nombre: form.nombre, apellido: form.apellido, tipo: 'abogado', cedula: form.cedula, telefono: form.telefono, especialidad: form.especialidades[0], especialidades: form.especialidades, estado: form.estado, ciudad: form.ciudad, bio: form.bio })
       if (user) {
-        await supabase.from('abogados').upsert({ id: user.id, email: form.email, nombre: form.nombre, apellido: form.apellido, telefono: form.telefono, cedula: form.cedula, especialidad: form.especialidad, estado: form.estado, ciudad: form.ciudad, bio: form.bio, verificado: false })
+        await supabase.from('abogados').upsert({ id: user.id, email: form.email, nombre: form.nombre, apellido: form.apellido, telefono: form.telefono, cedula: form.cedula, especialidad: form.especialidades[0], especialidades: form.especialidades, estado: form.estado, ciudad: form.ciudad, bio: form.bio, verificado: false })
       }
       setSuccess(true)
     } catch (e) {
@@ -208,7 +209,7 @@ export default function AuthModal({ type, onClose, onSwitch }) {
                     <div style={S.fg}><label style={S.label}>{t.stateDrop}</label><select style={S.select} value={form.estado} onChange={e => set('estado',e.target.value)}><option value="">Selecciona...</option>{ESTADOS_MX.map(e => <option key={e}>{e}</option>)}</select></div>
                     <div style={S.fg}><label style={S.label}>{t.city}</label><input style={S.input} value={form.ciudad} onChange={e => set('ciudad',e.target.value)} placeholder="Guadalajara"/></div>
                   </div>
-                  <div style={S.fg}><label style={S.label}>{t.specialty}</label><select style={S.select} value={form.especialidad} onChange={e => set('especialidad',e.target.value)}>{ESPECIALIDADES.map(e => <option key={e}>{e}</option>)}</select></div>
+                  <div style={S.fg}><label style={S.label}>Especialidades (elige todas las que atiendes)</label><EspecialidadesPicker value={form.especialidades} onChange={v => set('especialidades', v)} /></div>
                   <div style={S.fg}><label style={S.label}>{t.bio}</label><textarea style={S.textarea} value={form.bio} onChange={e => set('bio',e.target.value)} placeholder={t.bioPlaceholder}/></div>
                   <div style={S.fg}><label style={S.label}>{t.minPass}</label><input style={S.input} type="password" value={form.password} onChange={e => set('password',e.target.value)} placeholder="••••••••"/></div>
                   {error && <p style={S.err}>{error}</p>}
