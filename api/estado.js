@@ -1,7 +1,8 @@
 // GET /api/estado — diagnóstico de configuración.
 // Solo responde sí/no y mensajes de error; nunca muestra llaves ni datos personales.
 
-import { supabaseAdmin, googleConfigurado, resendConfigurado, stripe } from './_lib.js'
+import crypto from 'node:crypto'
+import { supabaseAdmin, googleConfigurado, resendConfigurado, stripe, siteUrl } from './_lib.js'
 
 export default async function handler(req, res) {
   const r = {
@@ -39,6 +40,32 @@ export default async function handler(req, res) {
     r.pruebas.webhooks = wh.data.map(w => ({ url: w.url, estado: w.status, eventos: w.enabled_events }))
   } catch (e) { r.pruebas.webhooks = 'ERROR: ' + e.message }
 
+  // Stripe: últimos avisos de pago y si quedaron pendientes de entregar
+  try {
+    const ev = await stripe('events?limit=5&type=checkout.session.completed', null, 'GET')
+    r.pruebas.avisos_stripe = ev.data.map(e => ({ fecha: new Date(e.created * 1000).toISOString(), pendientesDeEntregar: e.pending_webhooks, pagado: e.data.object.payment_status, tieneDatosCita: !!e.data.object.metadata?.fecha }))
+  } catch (e) { r.pruebas.avisos_stripe = 'ERROR: ' + e.message }
+
+  // ¿El webhook acepta un aviso firmado con el secreto configurado?
+  try {
+    const body = JSON.stringify({ type: 'diagnostico.ping', data: { object: {} } })
+    const t = Math.floor(Date.now() / 1000)
+    const sig = crypto.createHmac('sha256', process.env.STRIPE_WEBHOOK_SECRET || '').update(`${t}.${body}`).digest('hex')
+    const w = await fetch(siteUrl() + '/api/stripe-webhook', { method: 'POST', headers: { 'stripe-signature': `t=${t},v1=${sig}`, 'Content-Type': 'application/json' }, body })
+    r.pruebas.webhook_firma = w.status + ' ' + (await w.text()).slice(0, 120)
+  } catch (e) { r.pruebas.webhook_firma = 'ERROR: ' + e.message }
+
+  // ¿Se puede guardar una consulta? (fila de prueba que se borra enseguida)
+  try {
+    const sb = supabaseAdmin()
+    const { data, error } = await sb.from('consultas').insert({
+      especialidad: 'Diagnóstico', fecha: '2030-01-01', hora: '10:00 AM', descripcion: 'prueba', monto: 0, pagado: false, stripe_session_id: 'diag_' + Date.now(),
+    }).select().single()
+    if (error) throw error
+    await sb.from('consultas').delete().eq('id', data.id)
+    r.pruebas.guardar_consulta = 'ok'
+  } catch (e) { r.pruebas.guardar_consulta = 'ERROR: ' + (e.message || JSON.stringify(e)) }
+
   // Google
   if (googleConfigurado()) {
     try {
@@ -48,8 +75,6 @@ export default async function handler(req, res) {
       }).then(x => x.json())
       if (!t.access_token) throw new Error(t.error_description || t.error || 'sin token')
       r.pruebas.google_token = 'ok' + (t.scope ? ' · permisos: ' + t.scope : '')
-      const cal = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary', { headers: { Authorization: 'Bearer ' + t.access_token } }).then(x => x.json())
-      r.pruebas.google_calendario = cal.id ? 'ok · ' + cal.id : 'ERROR: ' + (cal.error?.message || 'sin acceso')
     } catch (e) { r.pruebas.google_token = 'ERROR: ' + e.message }
   }
 
