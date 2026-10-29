@@ -46,6 +46,22 @@ export default async function handler(req, res) {
     r.pruebas.avisos_stripe = ev.data.map(e => ({ fecha: new Date(e.created * 1000).toISOString(), pendientesDeEntregar: e.pending_webhooks, pagado: e.data.object.payment_status, tieneDatosCita: !!e.data.object.metadata?.fecha }))
   } catch (e) { r.pruebas.avisos_stripe = 'ERROR: ' + e.message }
 
+  // ?reprocesar=1 → vuelve a pasar por el webhook los pagos cuyo aviso quedó pendiente.
+  // Es seguro: usa solo eventos reales leídos de Stripe y el webhook no duplica consultas.
+  if (req.query?.reprocesar === '1') {
+    try {
+      const ev = await stripe('events?limit=20&type=checkout.session.completed', null, 'GET')
+      r.reprocesados = []
+      for (const e of ev.data.filter(x => x.pending_webhooks > 0)) {
+        const body = JSON.stringify(e)
+        const t = Math.floor(Date.now() / 1000)
+        const sig = crypto.createHmac('sha256', process.env.STRIPE_WEBHOOK_SECRET || '').update(`${t}.${body}`).digest('hex')
+        const w = await fetch(siteUrl() + '/api/stripe-webhook', { method: 'POST', headers: { 'stripe-signature': `t=${t},v1=${sig}`, 'Content-Type': 'application/json' }, body })
+        r.reprocesados.push({ fecha: new Date(e.created * 1000).toISOString(), respuesta: w.status + ' ' + (await w.text()).slice(0, 80) })
+      }
+    } catch (e) { r.reprocesados = 'ERROR: ' + e.message }
+  }
+
   // ¿El webhook acepta un aviso firmado con el secreto configurado?
   try {
     const body = JSON.stringify({ type: 'diagnostico.ping', data: { object: {} } })
