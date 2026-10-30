@@ -3,7 +3,7 @@
 // Respondemos con la URL de pago de Stripe. La consulta NO se guarda aquí:
 // se crea en /api/stripe-webhook cuando Stripe confirma el pago.
 
-import { supabaseAdmin, stripe, siteUrl, PRECIO_CENTAVOS, HORAS, esFechaValida } from './_lib.js'
+import { supabaseAdmin, stripe, siteUrl, PRECIO_CENTAVOS, HORAS, esFechaValida, abogadosLibres } from './_lib.js'
 
 const ESPECIALIDADES = ['Derecho Civil', 'Derecho Migratorio', 'Derecho Familiar', 'Derecho Penal', 'Derecho Inmobiliario',
   'Derecho Mercantil', 'Derecho Fiscal', 'Seguridad Social', 'Derecho Administrativo', 'Derecho Agrario']
@@ -23,6 +23,8 @@ export default async function handler(req, res) {
     if (!ESPECIALIDADES.includes(especialidad)) return res.status(400).json({ error: 'Especialidad no válida.' })
     if (!HORAS.includes(hora)) return res.status(400).json({ error: 'Horario no válido.' })
     if (!esFechaValida(fecha, hora)) return res.status(400).json({ error: 'Elige una fecha y hora con al menos 2 horas de anticipación.' })
+    const { total, libres } = await abogadosLibres(sb, especialidad, fecha, hora)
+    if (total > 0 && libres.length === 0) return res.status(409).json({ error: 'Ese horario se acaba de ocupar. Elige otro, por favor.' })
 
     // 3) Asegurar que el cliente tenga perfil (cuentas creadas antes del ajuste de la base)
     const m = user.user_metadata || {}

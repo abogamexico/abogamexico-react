@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
 import { supabase } from '../lib/supabase'
 import { apiPost } from '../lib/api'
+import { esAdmin } from '../lib/admin'
 import { LogoMark } from '../components/Logo'
 import EspecialidadesPicker, { especialidadesDe } from '../components/EspecialidadesPicker'
 
@@ -138,6 +139,7 @@ export default function DashboardAbogado() {
         </a>
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:10 }}>
           <button onClick={toggleLang} style={{ background:'rgba(185,206,237,.1)', color:'#fff', border:'1px solid rgba(185,206,237,.25)', padding:'7px 13px', borderRadius:7, fontSize:'.8rem', fontWeight:600, cursor:'pointer' }}>🌐 {lang==='es'?'EN':'ES'}</button>
+          {esAdmin(user) && <a href="/admin" style={{ color:'#fff', fontSize:'.8rem', fontWeight:600, border:'1px solid rgba(185,206,237,.35)', padding:'7px 12px', borderRadius:7, textDecoration:'none' }}>Administración</a>}
           <span className="dash-nav-name" style={{ color:'rgba(255,255,255,.7)', fontSize:'.82rem' }}>Lic. {nombre}</span>
           <button onClick={handleSignOut} style={{ background:'transparent', color:'#fff', border:'1.5px solid rgba(185,206,237,.35)', padding:'7px 16px', borderRadius:7, fontSize:'.82rem', fontWeight:600, cursor:'pointer' }}>{t.navSignOut}</button>
         </div>

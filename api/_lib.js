@@ -251,3 +251,87 @@ export function archivoIcs({ uid, titulo, fecha, hora, detalles, meetLink }) {
     'END:VEVENT', 'END:VCALENDAR'].filter(Boolean).join('\r\n')
   return { filename: 'consulta-abogamexico.ics', content: Buffer.from(ics).toString('base64') }
 }
+
+// ── Disponibilidad de abogados ──────────────────────────────────────
+export const nombreDe = a => [a?.nombre, a?.apellido].filter(Boolean).join(' ')
+export const atiende = (a, especialidad) =>
+  (Array.isArray(a.especialidades) && a.especialidades.includes(especialidad)) || a.especialidad === especialidad
+
+// Abogados verificados que atienden la especialidad
+export async function abogadosDe(sb, especialidad) {
+  const { data } = await sb.from('abogados').select('*').eq('verificado', true)
+  return (data || []).filter(a => atiende(a, especialidad))
+}
+
+// Citas pagadas de un día, agrupadas por "abogado|hora"
+export async function ocupadosDelDia(sb, fecha) {
+  const { data } = await sb.from('consultas').select('id, abogado_id, hora, pagado').eq('fecha', fecha)
+  const set = new Set()
+  for (const c of data || []) if (c.pagado && c.abogado_id) set.add(c.abogado_id + '|' + c.hora)
+  return set
+}
+
+// Abogados libres en ese horario, el de menos consultas primero
+export async function abogadosLibres(sb, especialidad, fecha, hora, { excepto } = {}) {
+  const [todos, ocupados] = await Promise.all([abogadosDe(sb, especialidad), ocupadosDelDia(sb, fecha)])
+  const libres = todos.filter(a => a.id !== excepto && !ocupados.has(a.id + '|' + hora))
+  const cargas = await Promise.all(libres.map(async a => {
+    const { count } = await sb.from('consultas').select('id', { count: 'exact', head: true }).eq('abogado_id', a.id)
+    return [a, count || 0]
+  }))
+  return { total: todos.length, libres: cargas.sort((x, y) => x[1] - y[1]).map(x => x[0]) }
+}
+
+// ── Sesión y administrador ──────────────────────────────────────────
+export async function usuarioDe(req, sb) {
+  const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '')
+  if (!token) return null
+  const { data: { user } = {}, error } = await sb.auth.getUser(token)
+  return error ? null : user
+}
+
+//   ADMIN_EMAILS (opcional) correos con acceso a /admin, separados por coma
+export function esAdmin(user) {
+  const lista = (process.env.ADMIN_EMAILS || 'abogamexicoconsultoria@gmail.com,osalcidooo@gmail.com')
+    .split(',').map(x => x.trim().toLowerCase()).filter(Boolean)
+  return !!user?.email && lista.includes(user.email.toLowerCase())
+}
+
+// ── Cambiar un evento de Google Calendar ya creado ──────────────────
+export async function actualizarEvento(eventId, cambios) {
+  if (!googleConfigurado() || !eventId) return null
+  const token = await googleToken()
+  const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}?sendUpdates=none`, {
+    method: 'PATCH',
+    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(cambios),
+  })
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error('Google Calendar: ' + (json.error?.message || res.status))
+  return json
+}
+
+// Correo al abogado cuando se le asigna (o reasigna) una consulta
+export async function avisarAbogado(sb, c, { motivo = 'nueva' } = {}) {
+  if (!resendConfigurado() || !c.abogado_id) return
+  const [{ data: abogado }, { data: cliente }] = await Promise.all([
+    sb.from('abogados').select('nombre, apellido, email').eq('id', c.abogado_id).maybeSingle(),
+    sb.from('usuarios').select('nombre, apellido').eq('id', c.cliente_id).maybeSingle(),
+  ])
+  if (!abogado?.email) return
+  const titulo = `Consulta AbogaMéxico · ${c.especialidad}`
+  const cal = { titulo, fecha: c.fecha, hora: c.hora, detalles: 'Consulta legal por videollamada de hasta 60 minutos.', meetLink: c.meet_link }
+  const ics = archivoIcs({ ...cal, uid: 'consulta-' + c.id })
+  await enviarCorreo({
+    para: abogado.email,
+    asunto: `${motivo === 'reprogramada' ? 'Cita reprogramada' : 'Nueva consulta asignada'} · ${c.especialidad} · ${c.fecha} ${c.hora}`,
+    html: htmlConfirmacion({
+      nombre: 'Lic. ' + (abogado.nombre || ''), paraAbogado: true, cliente: nombreDe(cliente) || 'Cliente',
+      titulo: motivo === 'reprogramada' ? 'Una de tus citas cambió de horario' : undefined,
+      intro: motivo === 'reprogramada' ? 'la consulta se movió al nuevo horario que ves abajo.' : undefined,
+      especialidad: c.especialidad, fecha: c.fecha, hora: c.hora, meetLink: c.meet_link, descripcion: c.descripcion,
+      linkCalendario: linkGoogleCalendar(cal), panelUrl: siteUrl() + '/abogado',
+    }),
+    adjuntos: ics ? [ics] : undefined,
+  })
+}
