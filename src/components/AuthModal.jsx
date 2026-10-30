@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
 import EspecialidadesPicker from './EspecialidadesPicker'
+import { ESTADOS_MX } from '../lib/catalogos'
 import { supabase } from '../lib/supabase'
 
 const S = {
@@ -33,7 +34,6 @@ const S = {
   stripeNote: { textAlign:'center',fontSize:'.73rem',color:'#ccc',marginTop:10 },
 }
 
-const ESTADOS_MX = ['Ciudad de México','Jalisco','Nuevo León','Puebla','Yucatán','Guanajuato','Veracruz','Chihuahua','Coahuila','Oaxaca','Guerrero','Hidalgo','Michoacán','Sinaloa','Tamaulipas']
 
 export default function AuthModal({ type, onClose, onSwitch }) {
   const { t } = useLang()

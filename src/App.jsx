@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import DashboardAbogado from './pages/DashboardAbogado'
 import { Privacidad, Terminos } from './pages/Legal'
 import Restablecer from './pages/Restablecer'
+import Expediente from './pages/Expediente'
 
 function PrivateRoute({ children, requiredTipo }) {
   const { user, loading } = useAuth()
@@ -24,6 +25,9 @@ function AppRoutes() {
       } />
       <Route path="/abogado" element={
         <PrivateRoute requiredTipo="abogado"><DashboardAbogado /></PrivateRoute>
+      } />
+      <Route path="/abogado/consulta/:id" element={
+        <PrivateRoute requiredTipo="abogado"><Expediente /></PrivateRoute>
       } />
       <Route path="/privacidad" element={<Privacidad />} />
       <Route path="/terminos" element={<Terminos />} />

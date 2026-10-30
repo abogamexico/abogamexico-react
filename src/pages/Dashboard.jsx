@@ -78,6 +78,7 @@ export default function Dashboard() {
   const [agForm, setAgForm] = useState({ esp:'Derecho Civil', fecha:MANANA, hora:'10:00 AM', desc:'' })
   const [agError, setAgError] = useState('')
   const [aviso, setAviso] = useState(null) // 'ok' | 'cancelado'
+  const [verResumen, setVerResumen] = useState(null)
   const [agLoading, setAgLoading] = useState(false)
   const [savingProfile, setSavingProfile] = useState(false)
   const [profileForm, setProfileForm] = useState({ nombre:'', apellido:'', telefono:'', pais:'', ciudad:'' })
@@ -353,7 +354,10 @@ export default function Dashboard() {
                             <td style={S.td}>{c.hora||'—'}</td>
                             <td style={S.td}>{c.especialidad||'—'}</td>
                             <td style={S.td}>{salaUrl(c)?<a href={salaUrl(c)} target="_blank" rel="noreferrer" style={{ color:'var(--azul)', fontWeight:600, textDecoration:'underline' }}>{t.join}</a>:'—'}</td>
-                            <td style={S.td}>{esProx ? <EstadoCita c={c} lang={lang} /> : <Badge status={c.pagado?'completada':'pendiente'} t={t}/>}</td>
+                            <td style={S.td}>
+                              {esProx ? <EstadoCita c={c} lang={lang} /> : <Badge status={c.pagado?'completada':'pendiente'} t={t}/>}
+                              {c.resumen_enviado_at && <button onClick={() => setVerResumen(c)} style={{ ...S.btn, marginLeft:8, padding:'5px 12px', fontSize:'.75rem', background:'var(--azul)', color:'#fff' }}>{lang==='es'?'Ver resumen':'View summary'}</button>}
+                            </td>
                           </tr>
                         })}</tbody>
                       </table>
@@ -423,6 +427,20 @@ export default function Dashboard() {
           )}
         </main>
       </div>
+      {verResumen && (
+        <div role="dialog" aria-modal="true" aria-label="Resumen de tu consulta" onClick={() => setVerResumen(null)} style={{ position:'fixed', inset:0, background:'rgba(0,17,40,.7)', zIndex:2000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:'#fff', borderRadius:16, padding:'28px 26px', maxWidth:620, width:'100%', maxHeight:'85vh', overflowY:'auto' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12, marginBottom:10 }}>
+              <div>
+                <h3 style={{ fontFamily:'var(--display)', color:'var(--azul)', fontSize:'1.2rem' }}>{lang==='es'?'Resumen de tu consulta':'Consultation summary'}</h3>
+                <div style={{ fontSize:'.82rem', color:'#6b778c', marginTop:4 }}>{verResumen.especialidad} · {verResumen.fecha} · {verResumen.abogado_nombre ? 'Lic. ' + verResumen.abogado_nombre : ''}</div>
+              </div>
+              <button onClick={() => setVerResumen(null)} aria-label="Cerrar" style={{ background:'none', fontSize:'1.5rem', color:'#666', lineHeight:1 }}>×</button>
+            </div>
+            <div style={{ whiteSpace:'pre-wrap', fontSize:'.93rem', lineHeight:1.7, color:'#26344d' }}>{verResumen.resumen_cliente}</div>
+          </div>
+        </div>
+      )}
       <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
     </div>
   )

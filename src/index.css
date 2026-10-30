@@ -80,3 +80,9 @@ img { display: block; max-width: 100%; }
   .section { padding: 64px 0 !important; }
   .lawyer-cta { padding: 32px 20px !important; }
 }
+
+/* ── Expediente ───────────────────────────────────────── */
+@media (max-width: 900px) {
+  .exp-layout { grid-template-columns: 1fr !important; padding: 12px !important; }
+  .exp-aside { display: none !important; }
+}

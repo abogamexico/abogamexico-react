@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
 import { supabase } from '../lib/supabase'
@@ -91,8 +91,14 @@ export default function DashboardAbogado() {
     setAceptando(null)
   }
 
+  const linkExpediente = c => (
+    <Link to={'/abogado/consulta/' + c.id} style={{ ...S.btn, background:'var(--azul)', color:'#fff', fontSize:'.78rem', padding:'7px 14px', marginLeft:8, textDecoration:'none' }}>
+      📝 {c.resumen_enviado_at ? (lang==='es'?'Expediente ✓':'Case file ✓') : (lang==='es'?'Expediente':'Case file')}
+    </Link>
+  )
+
   function Aceptacion({ c }) {
-    if (c.aceptada_at) return <span style={{ ...S.badge, background:'#e8f5e9', color:'#1b5e20' }}>✓ {lang==='es'?'Aceptada':'Accepted'}</span>
+    if (c.aceptada_at) return <span style={{ whiteSpace:'nowrap' }}><span style={{ ...S.badge, background:'#e8f5e9', color:'#1b5e20' }}>✓ {lang==='es'?'Aceptada':'Accepted'}</span>{linkExpediente(c)}</span>
     return <button onClick={() => aceptar(c)} disabled={aceptando===c.id}
       style={{ ...S.btn, background:'var(--grad-acento)', color:'var(--sobre-acento)', fontSize:'.78rem', padding:'7px 14px' }}>
       {aceptando===c.id ? '…' : (lang==='es'?'Aceptar cita':'Accept')}</button>
@@ -294,7 +300,7 @@ export default function DashboardAbogado() {
                             <td style={S.td}>{c.hora||'—'}</td>
                             <td style={S.td}>{c.especialidad||'—'}</td>
                             <td style={S.td}>{salaUrl(c)?<a href={salaUrl(c)} target="_blank" rel="noreferrer" style={{ color:'var(--dorado)', fontWeight:600 }}>📹 {lang==='es'?'Unirse':'Join'}</a>:'—'}</td>
-                            <td style={S.td}>{esProx ? <Aceptacion c={c} /> : <span style={{ ...S.badge, background:'#f3f4f6', color:'#555' }}>{lang==='es'?'Completada':'Completed'}</span>}</td>
+                            <td style={S.td}>{esProx ? <Aceptacion c={c} /> : <span style={{ whiteSpace:'nowrap' }}><span style={{ ...S.badge, background:'#f3f4f6', color:'#555' }}>{lang==='es'?'Completada':'Completed'}</span>{linkExpediente(c)}</span>}</td>
                             
                           </tr>
                         })}</tbody>
