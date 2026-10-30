@@ -247,7 +247,7 @@ export default function Dashboard() {
                         <thead><tr>{[t.dateCol,t.timeCol,t.specialty2,t.room].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
                         <tbody>{proximas.slice(0,3).map((c,i)=>(
                           <tr key={i}><td style={S.td}>{c.fecha}</td><td style={S.td}>{c.hora}</td><td style={S.td}>{c.especialidad}</td>
-                          <td style={S.td}>{salaUrl(c)?<a href={salaUrl(c)} target="_blank" rel="noreferrer" style={{ color:'var(--dorado)', fontWeight:600 }}>📹 {t.join}</a>:'—'}</td></tr>
+                          <td style={S.td}>{salaUrl(c)?<a href={salaUrl(c)} target="_blank" rel="noreferrer" style={{ color:'var(--dorado)', fontWeight:600 }}>{t.join}</a>:'—'}</td></tr>
                         ))}</tbody>
                       </table>
                     </div>
@@ -346,7 +346,7 @@ export default function Dashboard() {
                             <td style={S.td}>{c.fecha||'—'}</td>
                             <td style={S.td}>{c.hora||'—'}</td>
                             <td style={S.td}>{c.especialidad||'—'}</td>
-                            <td style={S.td}>{salaUrl(c)?<a href={salaUrl(c)} target="_blank" rel="noreferrer" style={{ color:'var(--dorado)', fontWeight:600 }}>📹 {t.join}</a>:'—'}</td>
+                            <td style={S.td}>{salaUrl(c)?<a href={salaUrl(c)} target="_blank" rel="noreferrer" style={{ color:'var(--dorado)', fontWeight:600 }}>{t.join}</a>:'—'}</td>
                             <td style={S.td}><Badge status={esProx?'proxima':c.pagado?'pagado':'pendiente'} t={t}/></td>
                           </tr>
                         })}</tbody>
