@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '')
     const sb = supabaseAdmin()
     const { data: { user } = {}, error: authErr } = await sb.auth.getUser(token)
-    if (authErr || !user) return res.status(401).json({ error: 'Tu sesión expiró. Vuelve a iniciar sesión.' })
+    if (authErr || !user) return res.status(401).json({ error: 'Tu sesión expiró. Vuelve a iniciar sesión.', detalle: authErr?.message || (token ? 'sin usuario' : 'sin token') })
 
     const id = req.body?.consulta_id
     const { data: c } = await sb.from('consultas').select('*').eq('id', id).maybeSingle()

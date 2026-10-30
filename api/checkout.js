@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     if (!token) return res.status(401).json({ error: 'Inicia sesión para agendar.' })
     const sb = supabaseAdmin()
     const { data: { user } = {}, error: authErr } = await sb.auth.getUser(token)
-    if (authErr || !user) return res.status(401).json({ error: 'Tu sesión expiró. Vuelve a iniciar sesión.' })
+    if (authErr || !user) return res.status(401).json({ error: 'Tu sesión expiró. Vuelve a iniciar sesión.', detalle: authErr?.message || (token ? 'sin usuario' : 'sin token') })
 
     // 2) Validar los datos de la cita
     const { especialidad, fecha, hora, descripcion = '' } = req.body || {}

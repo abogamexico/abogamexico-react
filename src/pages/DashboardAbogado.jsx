@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
 import { supabase } from '../lib/supabase'
+import { apiPost } from '../lib/api'
 import { LogoMark } from '../components/Logo'
 import EspecialidadesPicker, { especialidadesDe } from '../components/EspecialidadesPicker'
 
@@ -84,14 +85,7 @@ export default function DashboardAbogado() {
   async function aceptar(c) {
     setAceptando(c.id)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const r = await fetch('/api/aceptar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (session?.access_token || '') },
-        body: JSON.stringify({ consulta_id: c.id }),
-      })
-      const j = await r.json().catch(() => ({}))
-      if (!r.ok) throw new Error(j.error || 'No se pudo aceptar.')
+      const j = await apiPost('/api/aceptar', { consulta_id: c.id })
       setConsultas(cs => cs.map(x => x.id === c.id ? { ...x, aceptada_at: j.aceptada_at } : x))
     } catch (e) { alert(e.message) }
     setAceptando(null)

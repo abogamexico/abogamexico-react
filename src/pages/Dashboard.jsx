@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
 import { supabase } from '../lib/supabase'
+import { apiPost } from '../lib/api'
 import { LogoMark } from '../components/Logo'
 
 // Enlace de la videollamada: Google Meet si existe; si no, la sala anterior de Jitsi
@@ -114,14 +115,8 @@ export default function Dashboard() {
     if (!agForm.fecha) { setAgError(lang==='es' ? 'Selecciona una fecha.' : 'Choose a date.'); return }
     setAgLoading(true)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const r = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (session?.access_token || '') },
-        body: JSON.stringify({ especialidad: agForm.esp, fecha: agForm.fecha, hora: agForm.hora, descripcion: agForm.desc }),
-      })
-      const j = await r.json().catch(() => ({}))
-      if (!r.ok || !j.url) throw new Error(j.error || 'No pudimos iniciar el pago.')
+      const j = await apiPost('/api/checkout', { especialidad: agForm.esp, fecha: agForm.fecha, hora: agForm.hora, descripcion: agForm.desc })
+      if (!j.url) throw new Error('No pudimos iniciar el pago.')
       window.location.href = j.url
     } catch (e) {
       setAgError(e.message)
