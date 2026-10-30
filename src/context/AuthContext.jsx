@@ -44,6 +44,10 @@ export function AuthProvider({ children }) {
       email, password, options: { data: metadata, emailRedirectTo: window.location.origin + '/' }
     })
     if (error) throw error
+    // Supabase no marca error si el correo ya existe: devuelve un usuario sin identidades
+    if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      throw new Error('already registered')
+    }
     return data
   }
 

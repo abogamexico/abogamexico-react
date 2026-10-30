@@ -96,7 +96,7 @@ export default function AuthModal({ type, onClose, onSwitch }) {
       }
       setSuccess(true)
     } catch (e) {
-      setError(e.message.includes('already') ? 'Este correo ya está registrado.' : e.message)
+      setError(e.message.includes('already') ? 'Este correo ya tiene una cuenta. Inicia sesión, o usa otro correo si quieres una cuenta distinta (cliente y abogado necesitan correos diferentes).' : e.message)
     } finally { setLoading(false) }
   }
 
@@ -113,7 +113,7 @@ export default function AuthModal({ type, onClose, onSwitch }) {
       }
       setSuccess(true)
     } catch (e) {
-      setError(e.message.includes('already') ? 'Este correo ya está registrado.' : e.message)
+      setError(e.message.includes('already') ? 'Este correo ya tiene una cuenta. Inicia sesión, o usa otro correo si quieres una cuenta distinta (cliente y abogado necesitan correos diferentes).' : e.message)
     } finally { setLoading(false) }
   }
 
