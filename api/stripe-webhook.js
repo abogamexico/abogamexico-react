@@ -8,7 +8,7 @@
 import {
   supabaseAdmin, verificarFirmaStripe, leerCuerpoCrudo,
   googleConfigurado, crearEventoMeet, inicioYFin,
-  resendConfigurado, enviarCorreo, htmlConfirmacion, linkGoogleCalendar, archivoIcs, siteUrl,
+  resendConfigurado, enviarCorreo, htmlConfirmacion, linkGoogleCalendar, archivoIcs, siteUrl, abogadosLibres,
 } from './_lib.js'
 
 export const config = { api: { bodyParser: false } }
@@ -37,21 +37,11 @@ export default async function handler(req, res) {
     const { data: existente } = await sb.from('consultas').select('*').eq('stripe_session_id', s.id).maybeSingle()
     consulta = existente
     if (!consulta) {
-      // 2) Elegir abogado: verificado y de la misma especialidad, el que tenga menos consultas
-      let abogado = null
-      // (acepta abogados con varias especialidades o con la columna vieja de una sola)
-      const { data: verificados } = await sb.from('abogados').select('*').eq('verificado', true)
-      const abogados = (verificados || []).filter(a =>
-        (Array.isArray(a.especialidades) && a.especialidades.includes(m.especialidad)) || a.especialidad === m.especialidad)
-      if (abogados?.length) {
-        const cargas = await Promise.all(abogados.map(async a => {
-          const { count } = await sb.from('consultas').select('id', { count: 'exact', head: true }).eq('abogado_id', a.id)
-          return [a, count || 0]
-        }))
-        abogado = cargas.sort((x, y) => x[1] - y[1])[0][0]
-      }
+      // 2) Elegir abogado: verificado, de esa especialidad, LIBRE en ese horario y con menos consultas
+      const { libres } = await abogadosLibres(sb, m.especialidad, m.fecha, m.hora)
+      let abogado = libres[0] || null
 
-      const { data, error } = await sb.from('consultas').insert({
+      const registro = {
         cliente_id: m.cliente_id || s.client_reference_id || null,
         abogado_id: abogado?.id || null,
         abogado_nombre: abogado ? [abogado.nombre, abogado.apellido].filter(Boolean).join(' ') : null,
@@ -63,13 +53,20 @@ export default async function handler(req, res) {
         pagado: true,
         stripe_session_id: s.id,
         stripe_payment_id: s.payment_intent || null,
-      }).select().single()
-      if (error) {
+      }
+      const { data, error } = await sb.from('consultas').insert(registro).select().single()
+      let fila = data
+      if (error && error.code === '23505' && /horario/i.test(error.message || '')) {
+        // Otro pago ganó ese horario con el mismo abogado al mismo tiempo: guardar sin abogado (lo asigna el administrador)
+        const r = await sb.from('consultas').insert({ ...registro, abogado_id: null, abogado_nombre: null }).select().single()
+        if (r.error) throw r.error
+        fila = r.data
+      } else if (error) {
         // Si Stripe mandó el mismo aviso dos veces al mismo tiempo, el índice único lo frena
         if (error.code === '23505') return res.status(200).json({ duplicado: true })
         throw error
       }
-      consulta = data
+      consulta = fila
 
       // Caso abierto para el expediente del cliente y del abogado
       await sb.from('casos').insert({

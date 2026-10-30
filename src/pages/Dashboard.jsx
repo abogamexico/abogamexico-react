@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
 import { supabase } from '../lib/supabase'
 import { apiPost } from '../lib/api'
+import { esAdmin } from '../lib/admin'
 import { LogoMark } from '../components/Logo'
 
 // Enlace de la videollamada: Google Meet si existe; si no, la sala anterior de Jitsi
@@ -77,6 +78,26 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [agForm, setAgForm] = useState({ esp:'Derecho Civil', fecha:MANANA, hora:'10:00 AM', desc:'' })
   const [agError, setAgError] = useState('')
+  const [horarios, setHorarios] = useState({ cargando: true, horas: [] })
+
+  // Horas libres para la especialidad y fecha elegidas
+  useEffect(() => {
+    if (!agForm.fecha || !agForm.esp) return
+    let vigente = true
+    setHorarios(h => ({ ...h, cargando: true }))
+    fetch('/api/horarios?' + new URLSearchParams({ especialidad: agForm.esp, fecha: agForm.fecha }))
+      .then(r => r.json())
+      .then(j => {
+        if (!vigente) return
+        const horas = j.horas || []
+        setHorarios({ cargando: false, horas })
+        // Si la hora elegida ya no está libre, elegir la primera libre
+        setAgForm(f => horas.some(x => x.hora === f.hora && x.disponible) ? f : { ...f, hora: (horas.find(x => x.disponible) || {}).hora || '' })
+      })
+      // Si no se pudo consultar, mostrar todas (el servidor vuelve a validar al pagar)
+      .catch(() => vigente && setHorarios({ cargando: false, horas: ['09:00 AM','10:00 AM','11:00 AM','12:00 PM','02:00 PM','03:00 PM','04:00 PM','05:00 PM'].map(hora => ({ hora, disponible: true })) }))
+    return () => { vigente = false }
+  }, [agForm.esp, agForm.fecha])
   const [aviso, setAviso] = useState(null) // 'ok' | 'cancelado'
   const [verResumen, setVerResumen] = useState(null)
   const [agLoading, setAgLoading] = useState(false)
@@ -114,6 +135,7 @@ export default function Dashboard() {
   async function agendar() {
     setAgError('')
     if (!agForm.fecha) { setAgError(lang==='es' ? 'Selecciona una fecha.' : 'Choose a date.'); return }
+    if (!agForm.hora) { setAgError(lang==='es' ? 'Elige una hora disponible.' : 'Choose an available time.'); return }
     setAgLoading(true)
     try {
       const j = await apiPost('/api/checkout', { especialidad: agForm.esp, fecha: agForm.fecha, hora: agForm.hora, descripcion: agForm.desc })
@@ -161,6 +183,7 @@ export default function Dashboard() {
         </a>
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:10 }}>
           <button onClick={toggleLang} style={{ background:'rgba(185,206,237,.1)', color:'#fff', border:'1px solid rgba(185,206,237,.25)', padding:'7px 13px', borderRadius:7, fontSize:'.8rem', fontWeight:600, cursor:'pointer' }}>🌐 {lang==='es'?'EN':'ES'}</button>
+          {esAdmin(user) && <a href="/admin" style={{ color:'#fff', fontSize:'.8rem', fontWeight:600, border:'1px solid rgba(185,206,237,.35)', padding:'7px 12px', borderRadius:7, textDecoration:'none' }}>Administración</a>}
           <span className="dash-nav-name" style={{ color:'rgba(255,255,255,.7)', fontSize:'.82rem' }}>{nombre}</span>
           <button onClick={handleSignOut} style={{ background:'transparent', color:'#fff', border:'1.5px solid rgba(185,206,237,.35)', padding:'7px 16px', borderRadius:7, fontSize:'.82rem', fontWeight:600, cursor:'pointer' }}>{t.navSignOut}</button>
         </div>
@@ -278,15 +301,35 @@ export default function Dashboard() {
                           <input style={S.input} type="date" min={HOY} value={agForm.fecha} onChange={e => setAgForm(f=>({...f,fecha:e.target.value}))}/>
                         </div>
                         <div style={S.fg}>
-                          <label style={S.label}>{t.time} {lang==='es' ? '(hora del Centro de México)' : '(Mexico City time)'}</label>
-                          <select style={S.select} value={agForm.hora} onChange={e => setAgForm(f=>({...f,hora:e.target.value}))}>
-                            {['09:00 AM','10:00 AM','11:00 AM','12:00 PM','02:00 PM','03:00 PM','04:00 PM','05:00 PM'].map(h=><option key={h}>{h}</option>)}
-                          </select>
-                        </div>
-                        <div style={S.fg}>
                           <label style={S.label}>{t.describeMatter}</label>
                           <input style={S.input} value={agForm.desc} onChange={e => setAgForm(f=>({...f,desc:e.target.value}))} placeholder="Ej. Divorcio, herencia, visa..."/>
                         </div>
+                      </div>
+                      <div style={{ marginTop:18 }}>
+                        <div id="horas_l" style={S.label}>{t.time} {lang==='es' ? '(hora del Centro de México)' : '(Mexico City time)'}</div>
+                        {horarios.cargando ? (
+                          <p style={{ fontSize:'.85rem', color:'#888', marginTop:8 }}>{lang==='es' ? 'Buscando horarios libres…' : 'Checking availability…'}</p>
+                        ) : horarios.horas.some(x => x.disponible) ? (
+                          <div role="radiogroup" aria-labelledby="horas_l" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(104px, 1fr))', gap:8, marginTop:8 }}>
+                            {horarios.horas.map(({ hora, disponible }) => {
+                              const on = agForm.hora === hora
+                              return (
+                                <button key={hora} type="button" role="radio" aria-checked={on} disabled={!disponible}
+                                  onClick={() => setAgForm(f => ({ ...f, hora }))}
+                                  style={{ padding:'11px 8px', borderRadius:9, fontSize:'.88rem', fontWeight:600, cursor: disponible ? 'pointer' : 'not-allowed',
+                                    border: on ? '2px solid var(--azul)' : '1.5px solid #d9dfe8',
+                                    background: on ? 'var(--azul)' : disponible ? '#fff' : '#f1f3f6',
+                                    color: on ? '#fff' : disponible ? 'var(--azul)' : '#a3abb8', textDecoration: disponible ? 'none' : 'line-through' }}>
+                                  {hora}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        ) : (
+                          <p style={{ fontSize:'.88rem', color:'#7a4f01', background:'#fff8e1', borderRadius:8, padding:'10px 14px', marginTop:8 }}>
+                            {lang==='es' ? 'No hay horarios libres ese día. Prueba con otra fecha.' : 'No free times that day. Try another date.'}
+                          </p>
+                        )}
                       </div>
                       <div style={{ marginTop:20, background:'linear-gradient(135deg,#f8faff,#f0f4f8)', border:'1px solid #dde8f8', borderRadius:12, padding:18, display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
                         <div>
