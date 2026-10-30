@@ -3,6 +3,24 @@
 --  Supabase → SQL Editor → New query → pega TODO → Run.
 -- ════════════════════════════════════════════════════════════════
 
+-- 0) La llave principal de consultas debe ser "id" (en Supabase no lo era)
+do $$
+declare pk text; cols text;
+begin
+  select c.conname, string_agg(a.attname, ',') into pk, cols
+    from pg_constraint c
+    join pg_attribute a on a.attrelid = c.conrelid and a.attnum = any(c.conkey)
+   where c.conrelid = 'public.consultas'::regclass and c.contype = 'p'
+   group by c.conname;
+  if pk is not null and cols <> 'id' then
+    execute format('alter table public.consultas drop constraint %I cascade', pk);
+  end if;
+  if not exists (select 1 from pg_constraint where conrelid = 'public.consultas'::regclass and contype = 'p') then
+    alter table public.consultas alter column id set not null;
+    alter table public.consultas add primary key (id);
+  end if;
+end $$;
+
 -- 1) Tabla de expedientes (lo que llena el abogado durante la consulta)
 create table if not exists public.expedientes (
   id uuid primary key default gen_random_uuid(),
