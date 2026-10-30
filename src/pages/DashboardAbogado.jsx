@@ -44,6 +44,7 @@ export default function DashboardAbogado() {
   const [loading, setLoading] = useState(true)
   const [resultModal, setResultModal] = useState(null)
   const [resultText, setResultText] = useState('')
+  const [aceptando, setAceptando] = useState(null)
   const [espEdit, setEspEdit] = useState([])
   const [espMsg, setEspMsg] = useState(null)
   const [espGuardando, setEspGuardando] = useState(false)
@@ -80,6 +81,29 @@ export default function DashboardAbogado() {
     loadAll()
   }
 
+  async function aceptar(c) {
+    setAceptando(c.id)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const r = await fetch('/api/aceptar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (session?.access_token || '') },
+        body: JSON.stringify({ consulta_id: c.id }),
+      })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok) throw new Error(j.error || 'No se pudo aceptar.')
+      setConsultas(cs => cs.map(x => x.id === c.id ? { ...x, aceptada_at: j.aceptada_at } : x))
+    } catch (e) { alert(e.message) }
+    setAceptando(null)
+  }
+
+  function Aceptacion({ c }) {
+    if (c.aceptada_at) return <span style={{ ...S.badge, background:'#e8f5e9', color:'#1b5e20' }}>✓ {lang==='es'?'Aceptada':'Accepted'}</span>
+    return <button onClick={() => aceptar(c)} disabled={aceptando===c.id}
+      style={{ ...S.btn, background:'var(--grad-acento)', color:'var(--sobre-acento)', fontSize:'.78rem', padding:'7px 14px' }}>
+      {aceptando===c.id ? '…' : (lang==='es'?'Aceptar cita':'Accept')}</button>
+  }
+
   async function guardarEspecialidades() {
     setEspMsg(null)
     if (espEdit.length === 0) return setEspMsg({ ok: false, t: lang==='es' ? 'Elige al menos una especialidad.' : 'Choose at least one specialty.' })
@@ -96,6 +120,7 @@ export default function DashboardAbogado() {
   const casosAbiertos = casos.filter(c => c.estado === 'abierto')
   const casosCerrados = casos.filter(c => c.estado !== 'abierto')
   const proximas = consultas.filter(c => c.fecha && c.fecha >= HOY)
+  const porAceptar = proximas.filter(c => !c.aceptada_at).length
   const ingresoTotal = consultas.filter(c => c.pagado).reduce((a,c) => a+(c.monto||0), 0)
   const pagosPendientes = consultas.filter(c => !c.pagado).length
 
@@ -160,6 +185,11 @@ export default function DashboardAbogado() {
                     {lang==='es'?'Ver casos asignados':'View assigned cases'}
                   </button>
                 </div>
+                {porAceptar > 0 && (
+                  <div role="status" style={{ background:'#fff8e1', border:'1px solid #ffe082', color:'#7a4f01', borderRadius:12, padding:'14px 18px', fontSize:'.92rem' }}>
+                    <strong>{lang==='es' ? `Tienes ${porAceptar} cita${porAceptar>1?'s':''} por aceptar.` : `You have ${porAceptar} appointment(s) to accept.`}</strong> {lang==='es' ? 'El cliente verá "Confirmada" en cuanto la aceptes.' : 'The client will see it as confirmed.'}
+                  </div>
+                )}
                 <div className="dash-stats" style={S.statsRow}>
                   {[
                     [casosAbiertos.length, t.assignedCases, '#B9CEED'],
@@ -181,13 +211,14 @@ export default function DashboardAbogado() {
                   ) : (
                     <div style={{ overflowX:'auto' }}>
                       <table style={S.table}>
-                        <thead><tr>{[t.dateCol,t.timeCol,t.specialty2,t.room].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+                        <thead><tr>{[t.dateCol,t.timeCol,t.specialty2,t.room,t.status].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
                         <tbody>{proximas.slice(0,5).map((c,i)=>(
                           <tr key={i}>
                             <td style={S.td}>{c.fecha}</td>
                             <td style={S.td}>{c.hora}</td>
                             <td style={S.td}>{c.especialidad||'—'}</td>
-                            <td style={S.td}>{salaUrl(c)?<a href={salaUrl(c)} target="_blank" rel="noreferrer" style={{ color:'var(--dorado)', fontWeight:600 }}>📹 {lang==='es'?'Unirse':'Join'}</a>:'—'}</td>
+                            <td style={S.td}>{salaUrl(c)?<a href={salaUrl(c)} target="_blank" rel="noreferrer" style={{ color:'var(--azul)', fontWeight:600, textDecoration:'underline' }}>📹 {lang==='es'?'Unirse':'Join'}</a>:'—'}</td>
+                            <td style={S.td}><Aceptacion c={c} /></td>
                           </tr>
                         ))}</tbody>
                       </table>
@@ -269,7 +300,7 @@ export default function DashboardAbogado() {
                             <td style={S.td}>{c.hora||'—'}</td>
                             <td style={S.td}>{c.especialidad||'—'}</td>
                             <td style={S.td}>{salaUrl(c)?<a href={salaUrl(c)} target="_blank" rel="noreferrer" style={{ color:'var(--dorado)', fontWeight:600 }}>📹 {lang==='es'?'Unirse':'Join'}</a>:'—'}</td>
-                            <td style={S.td}><span style={{ ...S.badge, background: esProx?'#e3f2fd':c.pagado?'#e8f5e9':'#fff8e1', color: esProx?'#1565c0':c.pagado?'#2e7d32':'#f57f17' }}>{esProx?lang==='es'?'Próxima':'Upcoming':c.pagado?lang==='es'?'Completada':'Completed':lang==='es'?'Pendiente':'Pending'}</span></td>
+                            <td style={S.td}>{esProx ? <Aceptacion c={c} /> : <span style={{ ...S.badge, background:'#f3f4f6', color:'#555' }}>{lang==='es'?'Completada':'Completed'}</span>}</td>
                             
                           </tr>
                         })}</tbody>
