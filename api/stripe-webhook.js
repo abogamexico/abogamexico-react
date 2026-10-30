@@ -8,7 +8,7 @@
 import {
   supabaseAdmin, verificarFirmaStripe, leerCuerpoCrudo,
   googleConfigurado, crearEventoMeet, inicioYFin,
-  resendConfigurado, enviarCorreo, htmlConfirmacion,
+  resendConfigurado, enviarCorreo, htmlConfirmacion, linkGoogleCalendar, archivoIcs, siteUrl,
 } from './_lib.js'
 
 export const config = { api: { bodyParser: false } }
@@ -54,6 +54,7 @@ export default async function handler(req, res) {
       const { data, error } = await sb.from('consultas').insert({
         cliente_id: m.cliente_id || s.client_reference_id || null,
         abogado_id: abogado?.id || null,
+        abogado_nombre: abogado ? [abogado.nombre, abogado.apellido].filter(Boolean).join(' ') : null,
         especialidad: m.especialidad || null,
         fecha: m.fecha || null,
         hora: m.hora || null,
@@ -132,20 +133,26 @@ export default async function handler(req, res) {
           : { data: null }
         const nombreCliente = [cliente?.nombre, cliente?.apellido].filter(Boolean).join(' ') || s.customer_details?.name || ''
         const nombreAbogado = abogado ? [abogado.nombre, abogado.apellido].filter(Boolean).join(' ') : null
-        const datos = { especialidad: c.especialidad, fecha: c.fecha, hora: c.hora, meetLink: c.meet_link, descripcion: c.descripcion }
+        const titulo = `Consulta AbogaMéxico · ${c.especialidad}`
+        const detalles = `Consulta legal por videollamada de hasta 60 minutos.${nombreAbogado ? ' Abogado: Lic. ' + nombreAbogado + '.' : ''}`
+        const cal = { titulo, fecha: c.fecha, hora: c.hora, detalles, meetLink: c.meet_link }
+        const ics = archivoIcs({ ...cal, uid: 'consulta-' + c.id })
+        const datos = { especialidad: c.especialidad, fecha: c.fecha, hora: c.hora, meetLink: c.meet_link, descripcion: c.descripcion, linkCalendario: linkGoogleCalendar(cal) }
         const correoCliente = s.customer_details?.email || s.customer_email || cliente?.email
 
         await enviarCorreo({
           para: correoCliente,
           copiaOculta: 'abogamexicoconsultoria@gmail.com',
           asunto: `Consulta confirmada · ${c.especialidad} · ${c.fecha} ${c.hora}`,
-          html: htmlConfirmacion({ ...datos, nombre: nombreCliente || 'cliente', abogado: nombreAbogado }),
+          html: htmlConfirmacion({ ...datos, nombre: nombreCliente || 'cliente', abogado: nombreAbogado, panelUrl: siteUrl() + '/dashboard' }),
+          adjuntos: ics ? [ics] : undefined,
         })
         if (abogado?.email) {
           await enviarCorreo({
             para: abogado.email,
             asunto: `Nueva consulta asignada · ${c.especialidad} · ${c.fecha} ${c.hora}`,
-            html: htmlConfirmacion({ ...datos, nombre: 'Lic. ' + (abogado.nombre || ''), paraAbogado: true, cliente: nombreCliente || 'Cliente' }),
+            html: htmlConfirmacion({ ...datos, nombre: 'Lic. ' + (abogado.nombre || ''), paraAbogado: true, cliente: nombreCliente || 'Cliente', panelUrl: siteUrl() + '/abogado' }),
+            adjuntos: ics ? [ics] : undefined,
           })
         }
         await sb.from('consultas').update({ confirmacion_enviada: true }).eq('id', c.id)

@@ -135,7 +135,7 @@ async function googleToken() {
 
 export async function crearEventoMeet({ id, titulo, descripcion, inicio, fin, invitados }) {
   const token = await googleToken()
-  const url = 'https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1&sendUpdates=all'
+  const url = 'https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1&sendUpdates=none' // sin correo de Google: el aviso lo manda AbogaMéxico
   const res = await fetch(url, {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
@@ -161,7 +161,7 @@ export async function crearEventoMeet({ id, titulo, descripcion, inicio, fin, in
 //   RESEND_API_KEY   llave re_... con permiso de envío (Vercel)
 export function resendConfigurado() { return !!process.env.RESEND_API_KEY }
 
-export async function enviarCorreo({ para, asunto, html, copiaOculta }) {
+export async function enviarCorreo({ para, asunto, html, copiaOculta, adjuntos }) {
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' },
@@ -172,6 +172,7 @@ export async function enviarCorreo({ para, asunto, html, copiaOculta }) {
       bcc: copiaOculta ? [].concat(copiaOculta) : undefined,
       subject: asunto,
       html,
+      attachments: adjuntos,
     }),
   })
   const json = await res.json().catch(() => ({}))
@@ -189,16 +190,21 @@ export function fechaLarga(fecha) {
     .format(new Date(Date.UTC(Y, M - 1, D)))
 }
 
-export function htmlConfirmacion({ nombre, especialidad, fecha, hora, abogado, meetLink, paraAbogado = false, cliente, descripcion }) {
+export function htmlConfirmacion({ nombre, especialidad, fecha, hora, abogado, meetLink, paraAbogado = false, cliente, descripcion, linkCalendario, titulo, intro, panelUrl }) {
   const fila = (k, v) => `<tr><td style="padding:8px 0;color:#5a6782;width:130px;vertical-align:top">${k}</td><td style="padding:8px 0;color:#00183D;font-weight:bold">${v}</td></tr>`
   const boton = meetLink
     ? `<p style="margin:28px 0"><a href="${esc(meetLink)}" style="background:#D4AF37;color:#00183D;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">Entrar a la videollamada</a></p>
        <p style="font-size:13px;color:#5a6782;margin:0 0 8px">O copia este enlace: <a href="${esc(meetLink)}" style="color:#00183D">${esc(meetLink)}</a></p>`
     : `<p style="background:#fff8e1;border-radius:8px;padding:12px 16px;color:#7a4f01">Te enviaremos el enlace de la videollamada en un correo aparte antes de tu cita.</p>`
+  const cal = linkCalendario
+    ? `<p style="margin:0 0 8px"><a href="${esc(linkCalendario)}" style="color:#00183D;font-weight:bold;text-decoration:underline">📅 Agregar a mi calendario de Google</a></p>
+       <p style="font-size:12px;color:#5a6782;margin:0">¿Usas iPhone u Outlook? Abre el archivo adjunto <b>consulta-abogamexico.ics</b>.</p>`
+    : ''
+  const panel = panelUrl ? `<p style="font-size:14px;margin:16px 0 0">Ver en mi panel: <a href="${esc(panelUrl)}" style="color:#00183D">${esc(panelUrl.replace('https://', ''))}</a></p>` : ''
   return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#1c2a44">
   <img src="https://www.abogamexico.com/logo-correo.png" width="232" height="60" alt="AbogaMéxico · Consultorio Jurídico Virtual" style="display:block;border:0;margin:0 0 28px">
-  <h3 style="color:#00183D;margin:0 0 12px">${paraAbogado ? 'Tienes una nueva consulta asignada' : '¡Tu consulta está confirmada!'}</h3>
-  <p style="line-height:1.6">Hola ${esc(nombre)}, ${paraAbogado ? 'un cliente agendó y pagó una consulta contigo.' : 'recibimos tu pago. Estos son los datos de tu consulta:'}</p>
+  <h3 style="color:#00183D;margin:0 0 12px">${esc(titulo || (paraAbogado ? 'Tienes una nueva consulta asignada' : '¡Tu consulta está confirmada!'))}</h3>
+  <p style="line-height:1.6">Hola ${esc(nombre)}, ${intro ? esc(intro) : (paraAbogado ? 'un cliente agendó y pagó una consulta contigo. Entra a tu panel para aceptarla.' : 'recibimos tu pago. Estos son los datos de tu consulta:')}</p>
   <table style="border-collapse:collapse;margin:16px 0;font-size:15px">
     ${fila('Especialidad', esc(especialidad))}
     ${fila('Fecha', esc(fechaLarga(fecha)))}
@@ -208,10 +214,40 @@ export function htmlConfirmacion({ nombre, especialidad, fecha, hora, abogado, m
     ${paraAbogado && descripcion ? fila('Asunto', esc(descripcion)) : ''}
   </table>
   ${boton}
+  ${cal}
+  ${panel}
   <p style="line-height:1.6;font-size:14px;margin-top:24px">${paraAbogado
-    ? 'La invitación también está en tu Google Calendar.'
+    ? 'Para guardar la cita en tu calendario usa el enlace de arriba.'
     : 'Entra desde tu celular o computadora unos minutos antes. No necesitas instalar nada. Si necesitas cambiar el horario, responde a este correo con al menos 24 horas de anticipación.'}</p>
   <hr style="border:none;border-top:1px solid #e3e8f0;margin:28px 0 16px">
   <p style="font-size:12px;color:#8a94a8">AbogaMéxico · abogamexicoconsultoria@gmail.com · www.abogamexico.com</p>
 </div>`
+}
+
+// ── "Agregar a mi calendario" ───────────────────────────────────────
+// Hora de pared CDMX → UTC "YYYYMMDDTHHMMSSZ". CDMX no tiene horario de verano desde 2022 (UTC-6 fijo).
+function utcCompacto(fecha, hora, sumarMin = 0) {
+  const r = inicioYFin(fecha, hora); if (!r) return null
+  const d = new Date(new Date(r.inicio + 'Z').getTime() + (6 * 60 + sumarMin) * 60000)
+  return d.toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z'
+}
+
+export function linkGoogleCalendar({ titulo, fecha, hora, detalles, meetLink }) {
+  const ini = utcCompacto(fecha, hora), fin = utcCompacto(fecha, hora, DURACION_MIN)
+  if (!ini) return null
+  const q = new URLSearchParams({ action: 'TEMPLATE', text: titulo, dates: `${ini}/${fin}`, details: detalles + (meetLink ? `\n\nVideollamada: ${meetLink}` : ''), location: meetLink || '' })
+  return 'https://calendar.google.com/calendar/render?' + q.toString()
+}
+
+export function archivoIcs({ uid, titulo, fecha, hora, detalles, meetLink }) {
+  const ini = utcCompacto(fecha, hora), fin = utcCompacto(fecha, hora, DURACION_MIN)
+  if (!ini) return null
+  const e = t => String(t || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n')
+  const ahora = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z'
+  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//AbogaMexico//Consultas//ES', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
+    `UID:${uid}@abogamexico.com`, `DTSTAMP:${ahora}`, `DTSTART:${ini}`, `DTEND:${fin}`, `SUMMARY:${e(titulo)}`,
+    `DESCRIPTION:${e(detalles + (meetLink ? '\n\nVideollamada: ' + meetLink : ''))}`, meetLink ? `LOCATION:${e(meetLink)}` : null, meetLink ? `URL:${meetLink}` : null,
+    'BEGIN:VALARM', 'TRIGGER:-PT30M', 'ACTION:DISPLAY', 'DESCRIPTION:Tu consulta empieza en 30 minutos', 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR'].filter(Boolean).join('\r\n')
+  return { filename: 'consulta-abogamexico.ics', content: Buffer.from(ics).toString('base64') }
 }

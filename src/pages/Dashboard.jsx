@@ -44,6 +44,16 @@ const ESPECIALIDADES = ['Derecho Civil','Derecho Migratorio','Derecho Familiar',
 const HOY = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City' }).format(new Date())
 const MANANA = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City' }).format(new Date(Date.now() + 864e5))
 
+// Estado de la cita según el abogado
+function EstadoCita({ c, lang }) {
+  const es = lang === 'es'
+  const st = (bg, color, txt) => <span style={{ display:'inline-block', padding:'3px 10px', borderRadius:20, fontSize:'.72rem', fontWeight:600, background:bg, color }}>{txt}</span>
+  if (!c.abogado_id) return st('#f3f4f6', '#555', es ? 'Asignando abogado' : 'Assigning lawyer')
+  const lic = c.abogado_nombre ? 'Lic. ' + c.abogado_nombre : (es ? 'tu abogado' : 'your lawyer')
+  if (c.aceptada_at) return st('#e8f5e9', '#1b5e20', (es ? '✓ Confirmada por ' : '✓ Confirmed by ') + lic)
+  return st('#fff8e1', '#7a4f01', (es ? 'Esperando confirmación de ' : 'Waiting for ') + lic)
+}
+
 function Badge({ status, t }) {
   const map = {
     abierto: { bg:'#e8f5e9', color:'#2e7d32', label: t.open },
@@ -244,10 +254,11 @@ export default function Dashboard() {
                   ) : (
                     <div style={{ overflowX:'auto' }}>
                       <table style={S.table}>
-                        <thead><tr>{[t.dateCol,t.timeCol,t.specialty2,t.room].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+                        <thead><tr>{[t.dateCol,t.timeCol,t.specialty2,t.room,t.status].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
                         <tbody>{proximas.slice(0,3).map((c,i)=>(
                           <tr key={i}><td style={S.td}>{c.fecha}</td><td style={S.td}>{c.hora}</td><td style={S.td}>{c.especialidad}</td>
-                          <td style={S.td}>{salaUrl(c)?<a href={salaUrl(c)} target="_blank" rel="noreferrer" style={{ color:'var(--dorado)', fontWeight:600 }}>{t.join}</a>:'—'}</td></tr>
+                          <td style={S.td}>{salaUrl(c)?<a href={salaUrl(c)} target="_blank" rel="noreferrer" style={{ color:'var(--azul)', fontWeight:600, textDecoration:'underline' }}>{t.join}</a>:'—'}</td>
+                          <td style={S.td}><EstadoCita c={c} lang={lang} /></td></tr>
                         ))}</tbody>
                       </table>
                     </div>
@@ -346,8 +357,8 @@ export default function Dashboard() {
                             <td style={S.td}>{c.fecha||'—'}</td>
                             <td style={S.td}>{c.hora||'—'}</td>
                             <td style={S.td}>{c.especialidad||'—'}</td>
-                            <td style={S.td}>{salaUrl(c)?<a href={salaUrl(c)} target="_blank" rel="noreferrer" style={{ color:'var(--dorado)', fontWeight:600 }}>{t.join}</a>:'—'}</td>
-                            <td style={S.td}><Badge status={esProx?'proxima':c.pagado?'pagado':'pendiente'} t={t}/></td>
+                            <td style={S.td}>{salaUrl(c)?<a href={salaUrl(c)} target="_blank" rel="noreferrer" style={{ color:'var(--azul)', fontWeight:600, textDecoration:'underline' }}>{t.join}</a>:'—'}</td>
+                            <td style={S.td}>{esProx ? <EstadoCita c={c} lang={lang} /> : <Badge status={c.pagado?'completada':'pendiente'} t={t}/>}</td>
                           </tr>
                         })}</tbody>
                       </table>
