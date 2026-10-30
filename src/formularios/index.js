@@ -1,10 +1,19 @@
 import civil from './civil'
+import familiar from './familiar'
+import migratorio from './migratorio'
+import penal from './penal'
+import inmobiliario from './inmobiliario'
+import mercantil from './mercantil'
+import fiscal from './fiscal'
+import seguridadSocial from './seguridad_social'
+import administrativo from './administrativo'
+import agrario from './agrario'
 
 // Formulario por especialidad. Para agregar otra rama: crear su archivo
 // (copiando la forma de civil.js) y registrarla aquí.
-const FORMULARIOS = {
-  'Derecho Civil': civil,
-}
+export const FORMULARIOS = Object.fromEntries(
+  [civil, familiar, migratorio, penal, inmobiliario, mercantil, fiscal, seguridadSocial, administrativo, agrario].map(f => [f.especialidad, f])
+)
 
 // Formulario básico para las ramas que aún no tienen el suyo
 const basico = especialidad => ({
@@ -31,6 +40,8 @@ export function visible(cond, datos) {
   if (!cond) return true
   const v = datos[cond.campo]
   if ('incluye' in cond) return Array.isArray(v) && v.includes(cond.incluye)
+  if ('incluyeAlguno' in cond) return Array.isArray(v) && cond.incluyeAlguno.some(x => v.includes(x))
+  if ('en' in cond) return cond.en.includes(v)
   if ('igual' in cond) return v === cond.igual
   if ('distinto' in cond) return v !== undefined && v !== '' && v !== cond.distinto
   return true
