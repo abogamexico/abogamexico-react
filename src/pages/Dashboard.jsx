@@ -52,7 +52,7 @@ function EstadoCita({ c, lang }) {
   if (!c.abogado_id) return st('#f3f4f6', '#555', es ? 'Asignando abogado' : 'Assigning lawyer')
   const lic = c.abogado_nombre ? 'Lic. ' + c.abogado_nombre : (es ? 'tu abogado' : 'your lawyer')
   if (c.aceptada_at) return st('#e8f5e9', '#1b5e20', (es ? '✓ Confirmada por ' : '✓ Confirmed by ') + lic)
-  return st('#fff8e1', '#7a4f01', (es ? 'Esperando confirmación de ' : 'Waiting for ') + lic)
+  return st('#fff8e1', '#7a4f01', es ? 'Esperando confirmación del abogado' : 'Waiting for lawyer confirmation')
 }
 
 function Badge({ status, t }) {
